@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="copyright" content="© 2025 Quiq. All rights reserved. Unauthorized use or redistribution prohibited.">
   <title>Ten2357</title>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://quiq.vercel.app/other/stuff/marked.js"></script> <!-- Custom script included here -->
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -104,12 +104,8 @@
   </div>
 
   <script>
-    // ✅ Enable GitHub Flavored Markdown (GFM)
-    marked.setOptions({
-      gfm: true,
-      breaks: true,
-      headerIds: true
-    });
+    // Assuming gfm-editor.js defines a global object `gfmEditor` with a `parse()` method
+    // If it still uses `marked`, adjust accordingly
 
     const pageTexts = {
       "page1": `
@@ -154,7 +150,12 @@ function greet() {
       }
 
       sub.textContent = `Viewing ${option.textContent}`;
-      box.innerHTML = marked.parse(pageTexts[type]);
+
+      // 🔁 Replace 'marked.parse' with your custom parser method, e.g. gfmEditor.parse()
+      box.innerHTML = (typeof gfmEditor !== 'undefined' && gfmEditor.parse)
+        ? gfmEditor.parse(pageTexts[type])
+        : "<p><em>Error: Markdown parser not loaded.</em></p>";
+
       box.classList.remove("hidden");
 
       const url = new URL(window.location.href);
