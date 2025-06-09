@@ -23,13 +23,13 @@
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     }
 
-    .license-title {
+    .page-title {
       font-size: 36px;
       font-weight: 700;
       margin-bottom: 5px;
     }
 
-    .license-sub {
+    .page-sub {
       font-size: 18px;
       color: #555;
       margin-bottom: 25px;
@@ -53,7 +53,7 @@
       width: 100%;
     }
 
-    .license-box {
+    .page-box {
       background-color: #fafafa;
       border: 1px solid #ddd;
       border-radius: 8px;
@@ -64,17 +64,17 @@
       line-height: 1.6;
     }
 
-    .license-box h1, .license-box h2, .license-box h3 {
+    .page-box h1, .page-box h2, .page-box h3 {
       margin-top: 1em;
     }
 
-    .license-box code {
+    .page-box code {
       background: #eee;
       padding: 2px 4px;
       border-radius: 4px;
     }
 
-    .license-box pre {
+    .page-box pre {
       background: #eee;
       padding: 10px;
       border-radius: 6px;
@@ -89,47 +89,72 @@
 <body>
 
   <div class="container">
-    <div class="license-title">License:</div>
-    <div class="license-sub" id="license-sub">Select a license type</div>
+    <div class="page-title">Page Viewer</div>
+    <div class="page-sub" id="page-sub">Select a page to view</div>
 
     <div class="type-selector">
-      <label for="type-select">Choose a license type:</label>
+      <label for="type-select">Choose a page:</label>
       <select id="type-select">
-        <option value="">-- Select a license type --</option>
+        <option value="">-- Select a page --</option>
         <option value="page1">Page-1</option>
       </select>
     </div>
 
-    <div class="license-box hidden" id="license-box"></div>
+    <div class="page-box hidden" id="page-box"></div>
   </div>
 
   <script>
-    const licenseTexts = {
+    // ✅ Enable GitHub Flavored Markdown (GFM)
+    marked.setOptions({
+      gfm: true,
+      breaks: true,
+      headerIds: true
+    });
+
+    const pageTexts = {
       "page1": `
-# Wait For more
+# GitHub Flavored Markdown
+
+- [x] Task list item one  
+- [ ] Task list item two
+
+\`\`\`js
+function greet() {
+  console.log("Hello, GFM!");
+}
+\`\`\`
+
+| Syntax | Description |
+|--------|-------------|
+| Header | Title       |
+| Paragraph | Text    |
+
+~~Strikethrough~~ is also supported.
+
+> This is a GFM blockquote
       `
     };
 
     function updateDisplay(type) {
-      const sub = document.getElementById('license-sub');
-      const box = document.getElementById('license-box');
+      const sub = document.getElementById('page-sub');
+      const box = document.getElementById('page-box');
 
-      if (!type || !licenseTexts[type]) {
-        sub.textContent = "Invalid or missing license type.";
-        box.innerHTML = "<p><em>License not found.</em></p>";
+      if (!type || !pageTexts[type]) {
+        sub.textContent = "Invalid or missing page.";
+        box.innerHTML = "<p><em>Page not found.</em></p>";
         box.classList.remove("hidden");
         return;
       }
 
       const option = document.querySelector(`#type-select option[value="${type}"]`);
       if (!option) {
-        sub.textContent = "Invalid license selected.";
+        sub.textContent = "Invalid page selected.";
         box.classList.add("hidden");
         return;
       }
 
-      sub.textContent = `for ${option.textContent}`;
-      box.innerHTML = marked.parse(licenseTexts[type]);
+      sub.textContent = `Viewing ${option.textContent}`;
+      box.innerHTML = marked.parse(pageTexts[type]);
       box.classList.remove("hidden");
 
       const url = new URL(window.location.href);
@@ -142,7 +167,7 @@
       const type = url.searchParams.get("type");
 
       const select = document.getElementById("type-select");
-      if (type && licenseTexts[type]) {
+      if (type && pageTexts[type]) {
         select.value = type;
         updateDisplay(type);
       }
