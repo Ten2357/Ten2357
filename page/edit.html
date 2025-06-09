@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GFM Editor — Modrinth Style</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: #f2f3f5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #1d1f21;
+      color: #fff;
+      padding: 16px 24px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .toolbar {
+      background: #fff;
+      padding: 12px 24px;
+      display: flex;
+      gap: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .toolbar button {
+      padding: 8px 12px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      background: #e3e5e8;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: background 0.2s ease;
+    }
+
+    .toolbar button:hover {
+      background: #d0d2d6;
+    }
+
+    .editor-container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    textarea {
+      width: 50%;
+      padding: 16px;
+      border: none;
+      resize: none;
+      font-size: 15px;
+      line-height: 1.5;
+      font-family: Consolas, Monaco, monospace;
+      outline: none;
+      background: #fff;
+    }
+
+    .preview {
+      width: 50%;
+      padding: 24px;
+      background-color: #fafafa;
+      overflow-y: auto;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .markdown-body {
+      box-sizing: border-box;
+      padding-bottom: 50px;
+    }
+
+    @media (max-width: 768px) {
+      .editor-container {
+        flex-direction: column;
+      }
+
+      textarea, .preview {
+        width: 100%;
+        height: 50%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>Modrinth-style GFM Editor</header>
+
+  <div class="toolbar">
+    <button onclick="insertText('# Heading')">H1</button>
+    <button onclick="insertText('## Heading 2')">H2</button>
+    <button onclick="insertText('- List item')">List</button>
+    <button onclick="insertText('```js\nconsole.log(\"Hello\");\n```')">Code</button>
+    <button onclick="insertText('| Column | Column |\n|--------|--------|\n| Cell   | Cell   |')">Table</button>
+    <button onclick="insertText('- [ ] Task')">Task</button>
+    <button onclick="togglePreview()">Toggle Preview</button>
+  </div>
+
+  <div class="editor-container">
+    <textarea id="markdown-input" placeholder="Write your GFM markdown here...">
+# Welcome
+
+This is a **GitHub Flavored Markdown** editor styled like Modrinth.
+
+- [x] Task items
+- [ ] Preview toggle
+- [ ] Insert snippets
+    </textarea>
+
+    <div id="markdown-preview" class="preview markdown-body hidden"></div>
+  </div>
+
+  <script>
+    // Enable GFM
+    marked.setOptions({
+      gfm: true,
+      breaks: true,
+      headerIds: true,
+      langPrefix: 'language-'
+    });
+
+    const input = document.getElementById('markdown-input');
+    const preview = document.getElementById('markdown-preview');
+    const editor = document.querySelector('textarea');
+
+    function renderMarkdown() {
+      preview.innerHTML = marked.parse(input.value);
+    }
+
+    input.addEventListener('input', renderMarkdown);
+    document.addEventListener('DOMContentLoaded', renderMarkdown);
+
+    function insertText(text) {
+      const start = input.selectionStart;
+      const end = input.selectionEnd;
+      const value = input.value;
+      input.value = value.substring(0, start) + text + '\n' + value.substring(end);
+      input.focus();
+      input.selectionStart = input.selectionEnd = start + text.length + 1;
+      renderMarkdown();
+    }
+
+    function togglePreview() {
+      const isPreviewing = !preview.classList.contains('hidden');
+
+      if (isPreviewing) {
+        preview.classList.add('hidden');
+        input.classList.remove('hidden');
+      } else {
+        renderMarkdown();
+        preview.classList.remove('hidden');
+        input.classList.add('hidden');
+      }
+    }
+  </script>
+</body>
+</html>
