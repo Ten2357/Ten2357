@@ -1,77 +1,160 @@
-# Markdown syntax guide
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="copyright" content="© 2025 Quiq. All rights reserved. Unauthorized use or redistribution prohibited.">
+  <title>Ten2357</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f2f5;
+      padding: 40px;
+      color: #333;
+    }
 
-## Headers
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
 
-# This is a Heading h1
-## This is a Heading h2
-###### This is a Heading h6
+    .license-title {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
 
-## Emphasis
+    .license-sub {
+      font-size: 18px;
+      color: #555;
+      margin-bottom: 25px;
+    }
 
-*This text will be italic*  
-_This will also be italic_
+    .type-selector {
+      margin-bottom: 25px;
+    }
 
-**This text will be bold**  
-__This will also be bold__
+    label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 8px;
+    }
 
-_You **can** combine them_
+    select {
+      padding: 10px 14px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      width: 100%;
+    }
 
-## Lists
+    .license-box {
+      background-color: #fafafa;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-size: 15px;
+      line-height: 1.6;
+    }
 
-### Unordered
+    .license-box h1, .license-box h2, .license-box h3 {
+      margin-top: 1em;
+    }
 
-* Item 1
-* Item 2
-* Item 2a
-* Item 2b
-    * Item 3a
-    * Item 3b
+    .license-box code {
+      background: #eee;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
 
-### Ordered
+    .license-box pre {
+      background: #eee;
+      padding: 10px;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
 
-1. Item 1
-2. Item 2
-3. Item 3
-    1. Item 3a
-    2. Item 3b
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
 
-## Images
+  <div class="container">
+    <div class="license-title">License:</div>
+    <div class="license-sub" id="license-sub">Select a license type</div>
 
-![This is an alt text.](/image/sample.webp "This is a sample image.")
+    <div class="type-selector">
+      <label for="type-select">Choose a license type:</label>
+      <select id="type-select">
+        <option value="">-- Select a license type --</option>
+        <option value="page1">Page-1</option>
+      </select>
+    </div>
 
-## Links
+    <div class="license-box hidden" id="license-box"></div>
+  </div>
 
-You may be using [Markdown Live Preview](https://markdownlivepreview.com/).
+  <script>
+    const licenseTexts = {
+      "page1": `
+# Wait For more
+      `
+    };
 
-## Blockquotes
+    function updateDisplay(type) {
+      const sub = document.getElementById('license-sub');
+      const box = document.getElementById('license-box');
 
-> Markdown is a lightweight markup language with plain-text-formatting syntax, created in 2004 by John Gruber with Aaron Swartz.
->
->> Markdown is often used to format readme files, for writing messages in online discussion forums, and to create rich text using a plain text editor.
+      if (!type || !licenseTexts[type]) {
+        sub.textContent = "Invalid or missing license type.";
+        box.innerHTML = "<p><em>License not found.</em></p>";
+        box.classList.remove("hidden");
+        return;
+      }
 
-## Tables
+      const option = document.querySelector(`#type-select option[value="${type}"]`);
+      if (!option) {
+        sub.textContent = "Invalid license selected.";
+        box.classList.add("hidden");
+        return;
+      }
 
-| Left columns  | Right columns |
-| ------------- |:-------------:|
-| left foo      | right foo     |
-| left bar      | right bar     |
-| left baz      | right baz     |
+      sub.textContent = `for ${option.textContent}`;
+      box.innerHTML = marked.parse(licenseTexts[type]);
+      box.classList.remove("hidden");
 
-## Blocks of code
+      const url = new URL(window.location.href);
+      url.searchParams.set("type", type);
+      history.replaceState({}, '', url);
+    }
 
-```
-let message = 'Hello world';
-alert(message);
-```
+    function ensureValidType() {
+      const url = new URL(window.location.href);
+      const type = url.searchParams.get("type");
 
-## Inline code
+      const select = document.getElementById("type-select");
+      if (type && licenseTexts[type]) {
+        select.value = type;
+        updateDisplay(type);
+      }
+    }
 
-This web site is using `markedjs/marked`.
+    document.addEventListener("DOMContentLoaded", () => {
+      ensureValidType();
 
-
-
-
-
-<!-- Sripts -->
-
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+      document.getElementById("type-select").addEventListener("change", e => {
+        updateDisplay(e.target.value);
+      });
+    });
+  </script>
+</body>
+</html>
