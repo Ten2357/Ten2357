@@ -28,12 +28,13 @@
       background: #fff;
       padding: 12px 24px;
       display: flex;
-      gap: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
       border-bottom: 1px solid #ddd;
     }
 
     .toolbar button {
-      padding: 8px 12px;
+      padding: 6px 10px;
       font-size: 14px;
       border: 1px solid #ccc;
       background: #e3e5e8;
@@ -98,10 +99,16 @@
   <div class="toolbar">
     <button onclick="insertText('# Heading')">H1</button>
     <button onclick="insertText('## Heading 2')">H2</button>
+    <button onclick="insertText('### Heading 3')">H3</button>
+    <button onclick="insertText('**bold text**')">Bold</button>
+    <button onclick="insertText('_italic text_')">Italic</button>
+    <button onclick="insertText('> Blockquote')">Quote</button>
     <button onclick="insertText('- List item')">List</button>
+    <button onclick="insertText('- [ ] Task item')">Task</button>
     <button onclick="insertText('```js\nconsole.log(\"Hello\");\n```')">Code</button>
-    <button onclick="insertText('| Column | Column |\n|--------|--------|\n| Cell   | Cell   |')">Table</button>
-    <button onclick="insertText('- [ ] Task')">Task</button>
+    <button onclick="insertText('| Col | Col |\n| --- | --- |\n| Val | Val |')">Table</button>
+    <button onclick="insertText('<details>\n<summary>Click to expand</summary>\n\nSpoiler content here\n\n</details>')">Spoiler</button>
+    <button onclick="insertText('---')">HR</button>
     <button onclick="togglePreview()">Toggle Preview</button>
   </div>
 
@@ -111,16 +118,21 @@
 
 This is a **GitHub Flavored Markdown** editor styled like Modrinth.
 
-- [x] Task items
-- [ ] Preview toggle
-- [ ] Insert snippets
+<details>
+  <summary>Click to reveal</summary>
+
+This is a spoiler section. It can hide details in a collapsible element.
+
+</details>
+
+- [x] Insert buttons
+- [x] Toggle preview
     </textarea>
 
     <div id="markdown-preview" class="preview markdown-body hidden"></div>
   </div>
 
   <script>
-    // Enable GFM
     marked.setOptions({
       gfm: true,
       breaks: true,
@@ -130,7 +142,6 @@ This is a **GitHub Flavored Markdown** editor styled like Modrinth.
 
     const input = document.getElementById('markdown-input');
     const preview = document.getElementById('markdown-preview');
-    const editor = document.querySelector('textarea');
 
     function renderMarkdown() {
       preview.innerHTML = marked.parse(input.value);
@@ -142,17 +153,18 @@ This is a **GitHub Flavored Markdown** editor styled like Modrinth.
     function insertText(text) {
       const start = input.selectionStart;
       const end = input.selectionEnd;
-      const value = input.value;
-      input.value = value.substring(0, start) + text + '\n' + value.substring(end);
+      const before = input.value.substring(0, start);
+      const after = input.value.substring(end);
+      input.value = before + text + '\n' + after;
       input.focus();
       input.selectionStart = input.selectionEnd = start + text.length + 1;
       renderMarkdown();
     }
 
     function togglePreview() {
-      const isPreviewing = !preview.classList.contains('hidden');
+      const isPreview = !preview.classList.contains('hidden');
 
-      if (isPreviewing) {
+      if (isPreview) {
         preview.classList.add('hidden');
         input.classList.remove('hidden');
       } else {
