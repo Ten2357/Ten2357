@@ -353,3 +353,10 @@ Spoiler content
 })();
     })();
   </script>
+
+
+
+const markedScript = document.createElement('script');
+markedScript.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
+markedScript.onload = initEditor;
+document.head.appendChild(markedScript);
