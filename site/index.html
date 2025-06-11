@@ -4,7 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ten2357</title>
-  <link rel="icon" type="image/png" href="favicon.png" />
+      <script>
+    fetch('favicon.txt')
+      .then(response => response.text())
+      .then(base64 => {
+        const link = document.createElement('link');
+        link.rel = 'icon';
+        link.type = 'image/png';
+        link.href = 'data:image/png;base64,' + base64.trim();
+        document.head.appendChild(link);
+      })
+      .catch(error => console.error('Failed to load favicon:', error));
+       </script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     body {
