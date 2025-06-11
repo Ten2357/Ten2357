@@ -2,12 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="copyright" content="© 2025 Quiq. All rights reserved. Unauthorized use or redistribution prohibited.">
   <title>Ten2357</title>
+  <link rel="icon" type="image/png" href="favicon.png" />
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css"/>
-
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -37,161 +36,49 @@
       margin-bottom: 25px;
     }
 
-    .type-selector {
-      margin-bottom: 25px;
-    }
-
-    label {
-      font-weight: 600;
-      display: block;
-      margin-bottom: 8px;
-    }
-
-    select {
-      padding: 10px 14px;
-      font-size: 16px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      width: 100%;
-    }
-
     .page-box {
       background-color: #fafafa;
       border: 1px solid #ddd;
       border-radius: 8px;
       padding: 20px;
-      max-height: 500px;
+      max-height: 600px;
       overflow-y: auto;
       font-size: 15px;
       line-height: 1.6;
     }
 
-    .hidden {
-      display: none;
+    .page-box h1, .page-box h2, .page-box h3 {
+      margin-top: 1em;
     }
 
-    /* Modrinth-style spoiler */
-    .spoiler {
-      border: 1px solid #d1d5db;
-      border-radius: 8px;
-      background: #f3f4f6;
-      margin: 1em 0;
-      overflow: hidden;
+    .page-box code {
+      background: #eee;
+      padding: 2px 4px;
+      border-radius: 4px;
     }
 
-    .spoiler-summary {
-      padding: 12px 16px;
-      font-weight: 600;
-      background: #e5e7eb;
-      cursor: pointer;
-      user-select: none;
-      transition: background 0.2s ease;
-    }
-
-    .spoiler-summary:hover {
-      background: #d1d5db;
-    }
-
-    .spoiler-content {
-      padding: 12px 16px;
-      display: none;
-      background: #ffffff;
-      border-top: 1px solid #d1d5db;
-    }
-
-    .spoiler-content.open {
-      display: block;
+    .page-box pre {
+      background: #eee;
+      padding: 10px;
+      border-radius: 6px;
+      overflow-x: auto;
     }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <div class="page-title">Page Viewer</div>
-    <div class="page-sub" id="page-sub">Select a page to view</div>
-
-    <div class="type-selector">
-      <label for="type-select">Choose a page:</label>
-      <select id="type-select">
-        <option value="">-- Select a page --</option>
-        <option value="page1">Page-1</option>
-      </select>
-    </div>
-
-    <div class="page-box hidden markdown-body" id="page-box"></div>
+    <div class="page-title">Page-1:</div>
+    <div class="page-sub">Ten2357</div>
+    <div class="page-box" id="page-box"></div>
   </div>
 
   <script>
-    const pageTexts = {
-      "page1": `
-# Sample Page with Spoilers
+    const pageMarkdown = ` 
+# Wait
+`;
 
-Here is a spoiler:
-
-<div class="spoiler">
-  <div class="spoiler-summary">🔒 Click to reveal spoiler</div>
-  <div class="spoiler-content">
-    Creepers silently sneak up and explode. 💥 Be careful!
-  </div>
-</div>
-
-Here’s another:
-
-<div class="spoiler">
-  <div class="spoiler-summary">🧪 Another Secret</div>
-  <div class="spoiler-content">
-    Minecraft's splash potions don't need to be thrown at mobs directly.
-  </div>
-</div>
-      `
-    };
-
-    function updateDisplay(type) {
-      const sub = document.getElementById('page-sub');
-      const box = document.getElementById('page-box');
-
-      if (!type || !pageTexts[type]) {
-        sub.textContent = "Invalid or missing page.";
-        box.innerHTML = "<p><em>Page not found.</em></p>";
-        box.classList.remove("hidden");
-        return;
-      }
-
-      const option = document.querySelector(`#type-select option[value="${type}"]`);
-      sub.textContent = `Viewing ${option.textContent}`;
-      box.innerHTML = marked.parse(pageTexts[type]);
-      box.classList.remove("hidden");
-
-      document.querySelectorAll('.spoiler-summary').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const content = btn.nextElementSibling;
-          content.classList.toggle('open');
-        });
-      });
-
-      const url = new URL(window.location.href);
-      url.searchParams.set("type", type);
-      history.replaceState({}, '', url);
-    }
-
-    function ensureValidType() {
-      const url = new URL(window.location.href);
-      const type = url.searchParams.get("type");
-
-      const select = document.getElementById("type-select");
-      if (type && pageTexts[type]) {
-        select.value = type;
-        updateDisplay(type);
-      }
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      ensureValidType();
-
-      document.getElementById("type-select").addEventListener("change", e => {
-        updateDisplay(e.target.value);
-      });
-    });
+    document.getElementById("page-box").innerHTML = marked.parse(pageMarkdown);
   </script>
 </body>
 </html>
