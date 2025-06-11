@@ -89,7 +89,7 @@
     <div class="type-selector">
       <select id="type-select">
         <option value="" disabled selected>Select a page type</option>
-        <option value="quiq">Page-1</option>
+        <option value="page1">Page-1</option>
         <!-- Add more options as needed -->
       </select>
     </div>
@@ -101,6 +101,12 @@
     const pageTexts = {
       "page1": `
 # Wait For New
+
+This is a markdown-rendered page content.
+
+\`\`\`js
+console.log("Example code");
+\`\`\`
 `
     };
 
@@ -108,16 +114,17 @@
       const sub = document.getElementById('page-sub');
       const box = document.getElementById('page-box');
 
-      if (!type) {
+      if (!type || !pageTexts[type]) {
         sub.textContent = "Select a page type";
         box.classList.add("hidden");
+        box.innerHTML = "";
         return;
       }
 
       const displayName = document.querySelector(`#type-select option[value="${type}"]`).textContent;
-      sub.textContent = `${displayName}`;
+      sub.textContent = displayName;
 
-      const markdown = pageTexts[type] || "*Page not found.*";
+      const markdown = pageTexts[type];
       box.innerHTML = marked.parse(markdown);
       box.classList.remove("hidden");
 
