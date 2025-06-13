@@ -1,80 +1,52 @@
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-
-let bullets = [];
-let lastShotTime = 0;
-const shootCooldown = 300;
-
-const player = {
-  x: 400,
-  y: 300,
-  size: 20,
-  weapon: "gun"
-};
-
-const weaponData = {
-  gun: { speed: 7, damage: 10 }
-};
-
-canvas.addEventListener("click", (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const mouseX = e.clientX - rect.left;
-  const mouseY = e.clientY - rect.top;
-  shootTowards(mouseX, mouseY);
-});
-
-function shootTowards(targetX, targetY) {
-  const now = Date.now();
-  if (now - lastShotTime < shootCooldown) return;
-
-  const w = weaponData[player.weapon];
-  const startX = player.x + player.size / 2;
-  const startY = player.y + player.size / 2;
-  let dx = targetX - startX;
-  let dy = targetY - startY;
-  const dist = Math.hypot(dx, dy);
-  if (dist === 0) return;
-  dx = (dx / dist) * w.speed;
-  dy = (dy / dist) * w.speed;
-
-  bullets.push({
-    x: startX,
-    y: startY,
-    dx,
-    dy,
-    size: 5,
-    color: "yellow",
-    damage: w.damage
-  });
-
-  lastShotTime = now;
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #222;
+  color: white;
+  user-select: none;
 }
 
-function updateBullets() {
-  bullets.forEach(b => {
-    b.x += b.dx;
-    b.y += b.dy;
-  });
-  bullets = bullets.filter(b => b.x >= 0 && b.x <= 800 && b.y >= 0 && b.y <= 600);
+#gameCanvas {
+  background: #111;
+  display: block;
+  margin: 0 auto;
+  border: 2px solid #555;
 }
 
-function draw() {
-  ctx.clearRect(0, 0, 800, 600);
-  // draw player
-  ctx.fillStyle = "lime";
-  ctx.fillRect(player.x, player.y, player.size, player.size);
-
-  // draw bullets
-  bullets.forEach(b => {
-    ctx.fillStyle = b.color;
-    ctx.fillRect(b.x, b.y, b.size, b.size);
-  });
+#hud {
+  width: 800px;
+  margin: 10px auto;
+  display: flex;
+  justify-content: space-between;
+  font-size: 18px;
 }
 
-function gameLoop() {
-  updateBullets();
-  draw();
-  requestAnimationFrame(gameLoop);
+#shop {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 300px;
+  padding: 20px;
+  background: #333;
+  border: 2px solid #666;
+  transform: translate(-50%, -50%);
+  display: none;
+  z-index: 10;
 }
 
-gameLoop();
+#shop h2 {
+  margin-top: 0;
+  text-align: center;
+}
+
+#shop button {
+  width: 100%;
+  margin: 5px 0;
+  padding: 8px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+#open-shop-btn {
+  cursor: pointer;
+}
