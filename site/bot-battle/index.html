@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>2D Bot Battle Game</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+  <div id="hud">
+    <div>Health: <span id="health">100</span></div>
+    <div>Points: <span id="points">0</span></div>
+    <button onclick="openShop()">Shop</button>
+  </div>
+
+  <div id="shop" class="hidden">
+    <h2>Shop</h2>
+    <button onclick="buy('rocket')">Rocket Launcher (50 pts)</button>
+    <button onclick="buy('mine')">Land Mine (30 pts)</button>
+    <button onclick="buy('bomb')">Bomb (40 pts)</button>
+    <button onclick="closeShop()">Close</button>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
