@@ -1,9 +1,6 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-const shootSound = new Audio("assets/shoot.wav");
-const explodeSound = new Audio("assets/explode.wav");
-
 let player = {
   x: 400,
   y: 300,
@@ -32,12 +29,19 @@ const shootCooldown = 300;
 
 document.addEventListener("keydown", (e) => {
   keys[e.key.toLowerCase()] = true;
+
+  // Place mine with 'm'
+  if (e.key.toLowerCase() === 'm') placeMine();
+
+  // Place bomb with 'b'
+  if (e.key.toLowerCase() === 'b') placeBomb();
 });
+
 document.addEventListener("keyup", (e) => {
   keys[e.key.toLowerCase()] = false;
 });
 
-// Shoot towards mouse click
+// Shoot on mouse click
 canvas.addEventListener("click", (e) => {
   const rect = canvas.getBoundingClientRect();
   const mouseX = e.clientX - rect.left;
@@ -70,20 +74,17 @@ function shootTowards(targetX, targetY) {
   });
 
   lastShotTime = now;
-  shootSound.currentTime = 0;
-  shootSound.play();
 }
 
 function placeMine() {
   if (!player.inventory.includes("mine")) return;
-  mines.push({ x: player.x + 10, y: player.y + 10, damage: weaponData.mine.damage });
+  mines.push({ x: player.x + player.size / 2 - 5, y: player.y + player.size / 2 - 5, damage: weaponData.mine.damage });
 }
 
 function placeBomb() {
   if (!player.inventory.includes("bomb")) return;
-  explosions.push({ x: player.x, y: player.y, radius: 60, time: 30 });
-  explodeSound.currentTime = 0;
-  explodeSound.play();
+  explosions.push({ x: player.x + player.size / 2, y: player.y + player.size / 2, radius: 60, time: 30 });
+  // Sound can be added here if desired
 }
 
 function spawnBot() {
@@ -177,8 +178,6 @@ function checkHits() {
       if (Math.abs(bot.x - mine.x) < 10 && Math.abs(bot.y - mine.y) < 10) {
         bot.health -= mine.damage;
         explosions.push({ x: mine.x, y: mine.y, radius: 30, time: 30 });
-        explodeSound.currentTime = 0;
-        explodeSound.play();
         mine.hit = true;
       }
     });
@@ -240,11 +239,11 @@ function updateShopUI() {
 
 function openShop() {
   updateShopUI();
-  document.getElementById("shop").classList.remove("hidden");
+  document.getElementById("shop").style.display = "block";
 }
 
 function closeShop() {
-  document.getElementById("shop").classList.add("hidden");
+  document.getElementById("shop").style.display = "none";
 }
 
 function buy(item, cost) {
@@ -274,6 +273,13 @@ function loadGame() {
   }
 }
 
+// Event listeners for shop buttons
+document.getElementById("open-shop-btn").addEventListener("click", openShop);
+document.getElementById("close-shop-btn").addEventListener("click", closeShop);
+
+setInterval(spawnBot, 3000);
+loadGame();
+
 function gameLoop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   movePlayer();
@@ -291,6 +297,4 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
-setInterval(spawnBot, 3000);
-loadGame();
 gameLoop();
