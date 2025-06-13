@@ -1,27 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>2D Bot Battle Game</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>2D Battle Bot Game</title>
+<link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <canvas id="gameCanvas" width="800" height="600"></canvas>
 
-  <div id="hud">
-    <div>Health: <span id="health">100</span></div>
-    <div>Points: <span id="points">0</span></div>
-    <button onclick="openShop()">Shop</button>
-  </div>
+<h1>2D Bot Battle</h1>
 
-  <div id="shop" class="hidden">
-    <h2>Shop</h2>
-    <div id="shop-items"></div>
-    <button onclick="closeShop()">Close</button>
-  </div>
+<div id="hud">
+  <div>Health: <span id="health">100</span></div>
+  <div>Points: <span id="points">0</span></div>
+  <button id="openShopBtn">Open Shop</button>
+</div>
 
-  <audio id="bgm" src="assets/bgm.mp3" loop autoplay></audio>
-  <script src="game.js"></script>
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+
+<div id="shop" class="hidden">
+  <h2>Shop</h2>
+  <div id="shop-items"></div>
+  <button id="closeShopBtn">Close Shop</button>
+</div>
+
+<script src="game.js"></script>
+<script>
+  document.getElementById("openShopBtn").onclick = () => {
+    document.getElementById("shop").classList.remove("hidden");
+  };
+  document.getElementById("closeShopBtn").onclick = () => {
+    document.getElementById("shop").classList.add("hidden");
+  };
+</script>
+
 </body>
 </html>
