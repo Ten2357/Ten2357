@@ -1,52 +1,28 @@
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #222;
-  color: white;
-  user-select: none;
-}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>2D Battle Game</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
 
-#gameCanvas {
-  background: #111;
-  display: block;
-  margin: 0 auto;
-  border: 2px solid #555;
-}
+<div id="hud">
+  <div>Health: <span id="health">100</span></div>
+  <div>Points: <span id="points">0</span></div>
+  <button id="open-shop-btn">Open Shop</button>
+</div>
 
-#hud {
-  width: 800px;
-  margin: 10px auto;
-  display: flex;
-  justify-content: space-between;
-  font-size: 18px;
-}
+<canvas id="gameCanvas" width="800" height="600"></canvas>
 
-#shop {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  width: 300px;
-  padding: 20px;
-  background: #333;
-  border: 2px solid #666;
-  transform: translate(-50%, -50%);
-  display: none;
-  z-index: 10;
-}
+<div id="shop">
+  <h2>Shop</h2>
+  <div id="shop-items"></div>
+  <button id="close-shop-btn">Close Shop</button>
+</div>
 
-#shop h2 {
-  margin-top: 0;
-  text-align: center;
-}
+<script src="game.js"></script>
 
-#shop button {
-  width: 100%;
-  margin: 5px 0;
-  padding: 8px;
-  font-size: 16px;
-  cursor: pointer;
-}
-
-#open-shop-btn {
-  cursor: pointer;
-}
+</body>
+</html>
