@@ -1,36 +1,66 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
+const shootSound = new Audio("assets/shoot.wav");
+const explodeSound = new Audio("assets/explode.wav");
+
 let player = {
   x: 400,
   y: 300,
   size: 20,
-  color: "lime",
   speed: 3,
   health: 100,
   points: 0,
+  inventory: ["gun"],
+  weapon: "gun"
+};
+
+const weaponData = {
+  gun: { speed: 5, damage: 10 },
+  rocket: { speed: 3, damage: 30 },
+  bomb: { speed: 2, damage: 40 },
+  mine: { damage: 50 }
 };
 
 let keys = {};
 let bots = [];
 let bullets = [];
-let inventory = [];
+let mines = [];
+let explosions = [];
 
 document.addEventListener("keydown", (e) => keys[e.key] = true);
 document.addEventListener("keyup", (e) => keys[e.key] = false);
+
 document.addEventListener("keydown", (e) => {
   if (e.key === " ") shoot();
+  if (e.key === "b") placeBomb();
+  if (e.key === "m") placeMine();
 });
 
 function shoot() {
+  const w = weaponData[player.weapon];
   bullets.push({
-    x: player.x,
-    y: player.y,
-    dx: 5,
-    dy: 0,
+    x: player.x + 10,
+    y: player.y + 10,
+    dx: w.speed,
     size: 5,
-    color: "yellow"
+    color: "yellow",
+    damage: w.damage
   });
+  shootSound.currentTime = 0;
+  shootSound.play();
+}
+
+function placeMine() {
+  if (!player.inventory.includes("mine")) return;
+  mines.push({ x: player.x + 10, y: player.y + 10, damage: weaponData.mine.damage });
+}
+
+function placeBomb() {
+  if (!player.inventory.includes("bomb")) return;
+  explosions.push({ x: player.x, y: player.y, radius: 60, time: 30 });
+  explodeSound.currentTime = 0;
+  explodeSound.play();
 }
 
 function spawnBot() {
@@ -38,37 +68,38 @@ function spawnBot() {
     x: Math.random() * 800,
     y: Math.random() * 600,
     size: 20,
-    color: "red",
     health: 30
   });
 }
 
+function drawRect(obj, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(obj.x, obj.y, obj.size || 10, obj.size || 10);
+}
+
 function drawPlayer() {
-  ctx.fillStyle = player.color;
-  ctx.fillRect(player.x, player.y, player.size, player.size);
+  drawRect(player, "lime");
 }
 
 function drawBots() {
-  for (let bot of bots) {
-    ctx.fillStyle = bot.color;
-    ctx.fillRect(bot.x, bot.y, bot.size, bot.size);
-  }
+  bots.forEach(bot => drawRect(bot, "red"));
 }
 
 function drawBullets() {
-  for (let b of bullets) {
-    ctx.fillStyle = b.color;
-    ctx.fillRect(b.x, b.y, b.size, b.size);
-  }
+  bullets.forEach(b => drawRect(b, b.color));
 }
 
-function updateBullets() {
-  for (let b of bullets) {
-    b.x += b.dx;
-    b.y += b.dy;
-  }
-  // remove offscreen
-  bullets = bullets.filter(b => b.x < 800);
+function drawMines() {
+  mines.forEach(m => drawRect({ x: m.x, y: m.y, size: 10 }, "orange"));
+}
+
+function drawExplosions() {
+  explosions.forEach(e => {
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255, 165, 0, 0.4)";
+    ctx.fill();
+  });
 }
 
 function movePlayer() {
@@ -85,28 +116,57 @@ function botAI() {
     if (bot.y < player.y) bot.y += 1;
     if (bot.y > player.y) bot.y -= 1;
 
-    // Collision = damage
     if (Math.abs(bot.x - player.x) < 20 && Math.abs(bot.y - player.y) < 20) {
       player.health -= 0.5;
     }
   }
 }
 
-function checkBulletHits() {
-  for (let bullet of bullets) {
+function updateBullets() {
+  bullets.forEach(b => b.x += b.dx);
+  bullets = bullets.filter(b => b.x < 800);
+}
+
+function checkHits() {
+  for (let b of bullets) {
     for (let bot of bots) {
       if (
-        bullet.x < bot.x + bot.size &&
-        bullet.x + bullet.size > bot.x &&
-        bullet.y < bot.y + bot.size &&
-        bullet.y + bullet.size > bot.y
+        b.x < bot.x + bot.size &&
+        b.x + b.size > bot.x &&
+        b.y < bot.y + bot.size &&
+        b.y + b.size > bot.y
       ) {
-        bot.health -= 10;
-        bullet.x = 9999; // move bullet out
+        bot.health -= b.damage;
+        b.x = 9999;
       }
     }
   }
-  // remove dead bots
+
+  for (let mine of mines) {
+    for (let bot of bots) {
+      if (Math.abs(bot.x - mine.x) < 10 && Math.abs(bot.y - mine.y) < 10) {
+        bot.health -= mine.damage;
+        explosions.push({ x: mine.x, y: mine.y, radius: 30, time: 30 });
+        explodeSound.currentTime = 0;
+        explodeSound.play();
+        mine.hit = true;
+      }
+    }
+  }
+
+  for (let e of explosions) {
+    for (let bot of bots) {
+      let dist = Math.hypot(bot.x - e.x, bot.y - e.y);
+      if (dist < e.radius) {
+        bot.health -= 2;
+      }
+    }
+  }
+
+  mines = mines.filter(m => !m.hit);
+  explosions.forEach(e => e.time--);
+  explosions = explosions.filter(e => e.time > 0);
+
   bots = bots.filter(bot => {
     if (bot.health <= 0) {
       player.points += 10;
@@ -121,29 +181,33 @@ function updateHUD() {
   document.getElementById("points").textContent = player.points;
 
   if (player.health <= 0) {
-    alert("You Died! Restarting...");
+    alert("You Died! Game restarting.");
+    localStorage.clear();
     location.reload();
   }
 }
 
-function gameLoop() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+function updateShopUI() {
+  const shopItems = {
+    rocket: 50,
+    mine: 30,
+    bomb: 40
+  };
 
-  movePlayer();
-  updateBullets();
-  checkBulletHits();
-  botAI();
-
-  drawPlayer();
-  drawBots();
-  drawBullets();
-
-  updateHUD();
-
-  requestAnimationFrame(gameLoop);
+  const container = document.getElementById("shop-items");
+  container.innerHTML = "";
+  for (let item in shopItems) {
+    const owned = player.inventory.includes(item);
+    const btn = document.createElement("button");
+    btn.textContent = `${item} (${shopItems[item]} pts)`;
+    btn.disabled = owned;
+    btn.onclick = () => buy(item, shopItems[item]);
+    container.appendChild(btn);
+  }
 }
 
 function openShop() {
+  updateShopUI();
   document.getElementById("shop").classList.remove("hidden");
 }
 
@@ -151,16 +215,51 @@ function closeShop() {
   document.getElementById("shop").classList.add("hidden");
 }
 
-function buy(item) {
-  const cost = { rocket: 50, mine: 30, bomb: 40 }[item];
+function buy(item, cost) {
   if (player.points >= cost) {
     player.points -= cost;
-    inventory.push(item);
-    alert(`${item} purchased!`);
+    player.inventory.push(item);
+    alert(`Bought: ${item}`);
+    saveGame();
+    closeShop();
   } else {
-    alert("Not enough points!");
+    alert("Not enough points");
   }
 }
 
-setInterval(spawnBot, 3000); // every 3 seconds
+function saveGame() {
+  localStorage.setItem("battleSave", JSON.stringify({
+    points: player.points,
+    inventory: player.inventory
+  }));
+}
+
+function loadGame() {
+  const data = JSON.parse(localStorage.getItem("battleSave"));
+  if (data) {
+    player.points = data.points;
+    player.inventory = data.inventory;
+  }
+}
+
+function gameLoop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  movePlayer();
+  botAI();
+  updateBullets();
+  checkHits();
+
+  drawPlayer();
+  drawBots();
+  drawBullets();
+  drawMines();
+  drawExplosions();
+
+  updateHUD();
+
+  requestAnimationFrame(gameLoop);
+}
+
+setInterval(spawnBot, 3000);
+loadGame();
 gameLoop();
