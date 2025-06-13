@@ -1,300 +1,314 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-let player = {
-  x: 400,
-  y: 300,
-  size: 20,
-  speed: 3,
-  health: 100,
-  points: 0,
-  inventory: ["gun"],
-  weapon: "gun"
-};
+const healthDisplay = document.getElementById("health");
+const pointsDisplay = document.getElementById("points");
+const openShopBtn = document.getElementById("open-shop-btn");
+const shop = document.getElementById("shop");
+const closeShopBtn = document.getElementById("close-shop-btn");
+const shopItemsDiv = document.getElementById("shop-items");
 
-const weaponData = {
-  gun: { speed: 7, damage: 10 },
-  rocket: { speed: 4, damage: 30 },
-  bomb: { speed: 2, damage: 40 },
-  mine: { damage: 50 }
-};
+const WIDTH = canvas.width;
+const HEIGHT = canvas.height;
 
 let keys = {};
-let bullets = [];
-let bots = [];
-let mines = [];
-let explosions = [];
-let lastShotTime = 0;
-const shootCooldown = 300;
+let mouse = { x: 0, y: 0, clicked: false };
 
-document.addEventListener("keydown", (e) => {
-  keys[e.key.toLowerCase()] = true;
+class Player {
+  constructor() {
+    this.x = WIDTH / 2;
+    this.y = HEIGHT / 2;
+    this.radius = 15;
+    this.speed = 3;
+    this.health = 100;
+    this.points = 0;
+    this.respawnTime = 3000; // ms
+    this.isDead = false;
+    this.respawnTimer = null;
+    this.damage = 10; // base damage
+    this.color = "lightblue";
+    this.weapon = "starter gun";
+  }
 
-  // Place mine with 'm'
-  if (e.key.toLowerCase() === 'm') placeMine();
+  move() {
+    if (this.isDead) return;
+    if (keys["w"] && this.y - this.radius > 0) this.y -= this.speed;
+    if (keys["s"] && this.y + this.radius < HEIGHT) this.y += this.speed;
+    if (keys["a"] && this.x - this.radius > 0) this.x -= this.speed;
+    if (keys["d"] && this.x + this.radius < WIDTH) this.x += this.speed;
+  }
 
-  // Place bomb with 'b'
-  if (e.key.toLowerCase() === 'b') placeBomb();
-});
-
-document.addEventListener("keyup", (e) => {
-  keys[e.key.toLowerCase()] = false;
-});
-
-// Shoot on mouse click
-canvas.addEventListener("click", (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const mouseX = e.clientX - rect.left;
-  const mouseY = e.clientY - rect.top;
-  shootTowards(mouseX, mouseY);
-});
-
-function shootTowards(targetX, targetY) {
-  const now = Date.now();
-  if (now - lastShotTime < shootCooldown) return;
-
-  const w = weaponData[player.weapon];
-  const startX = player.x + player.size / 2;
-  const startY = player.y + player.size / 2;
-  let dx = targetX - startX;
-  let dy = targetY - startY;
-  const dist = Math.hypot(dx, dy);
-  if (dist === 0) return;
-  dx = (dx / dist) * w.speed;
-  dy = (dy / dist) * w.speed;
-
-  bullets.push({
-    x: startX,
-    y: startY,
-    dx,
-    dy,
-    size: 5,
-    color: "yellow",
-    damage: w.damage
-  });
-
-  lastShotTime = now;
-}
-
-function placeMine() {
-  if (!player.inventory.includes("mine")) return;
-  mines.push({ x: player.x + player.size / 2 - 5, y: player.y + player.size / 2 - 5, damage: weaponData.mine.damage });
-}
-
-function placeBomb() {
-  if (!player.inventory.includes("bomb")) return;
-  explosions.push({ x: player.x + player.size / 2, y: player.y + player.size / 2, radius: 60, time: 30 });
-  // Sound can be added here if desired
-}
-
-function spawnBot() {
-  bots.push({
-    x: Math.random() * (canvas.width - 20),
-    y: Math.random() * (canvas.height - 20),
-    size: 20,
-    health: 30
-  });
-}
-
-function drawRect(obj, color) {
-  ctx.fillStyle = color;
-  ctx.fillRect(obj.x, obj.y, obj.size || 10, obj.size || 10);
-}
-
-function drawPlayer() {
-  drawRect(player, "lime");
-}
-
-function drawBots() {
-  bots.forEach(bot => drawRect(bot, "red"));
-}
-
-function drawBullets() {
-  bullets.forEach(b => drawRect(b, b.color));
-}
-
-function drawMines() {
-  mines.forEach(m => drawRect({ x: m.x, y: m.y, size: 10 }, "orange"));
-}
-
-function drawExplosions() {
-  explosions.forEach(e => {
+  draw() {
+    if (this.isDead) return;
+    ctx.fillStyle = this.color;
     ctx.beginPath();
-    ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(255, 165, 0, 0.4)";
+    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
     ctx.fill();
-  });
-}
+  }
 
-function movePlayer() {
-  if (keys["w"]) player.y -= player.speed;
-  if (keys["s"]) player.y += player.speed;
-  if (keys["a"]) player.x -= player.speed;
-  if (keys["d"]) player.x += player.speed;
-
-  // Keep player inside canvas
-  player.x = Math.max(0, Math.min(canvas.width - player.size, player.x));
-  player.y = Math.max(0, Math.min(canvas.height - player.size, player.y));
-}
-
-function botAI() {
-  bots.forEach(bot => {
-    if (bot.x < player.x) bot.x += 1;
-    if (bot.x > player.x) bot.x -= 1;
-    if (bot.y < player.y) bot.y += 1;
-    if (bot.y > player.y) bot.y -= 1;
-
-    if (Math.abs(bot.x - player.x) < 20 && Math.abs(bot.y - player.y) < 20) {
-      player.health -= 0.5;
+  takeDamage(amount) {
+    this.health -= amount;
+    if (this.health <= 0) {
+      this.health = 0;
+      this.die();
     }
-  });
+    healthDisplay.textContent = this.health;
+  }
+
+  die() {
+    this.isDead = true;
+    // Remove player visually by not drawing
+    setTimeout(() => this.respawn(), this.respawnTime);
+  }
+
+  respawn() {
+    this.health = 100;
+    this.isDead = false;
+    this.x = WIDTH / 2;
+    this.y = HEIGHT / 2;
+    healthDisplay.textContent = this.health;
+  }
 }
 
-function updateBullets() {
-  bullets.forEach(b => {
-    b.x += b.dx;
-    b.y += b.dy;
-  });
-  bullets = bullets.filter(b => b.x >= 0 && b.x <= canvas.width && b.y >= 0 && b.y <= canvas.height);
-}
+class Bullet {
+  constructor(x, y, targetX, targetY, damage) {
+    this.x = x;
+    this.y = y;
+    this.radius = 5;
+    this.speed = 7;
+    this.damage = damage;
+    this.color = "yellow";
 
-function checkHits() {
-  for (let b of bullets) {
-    for (let bot of bots) {
-      if (
-        b.x < bot.x + bot.size &&
-        b.x + b.size > bot.x &&
-        b.y < bot.y + bot.size &&
-        b.y + b.size > bot.y
-      ) {
-        bot.health -= b.damage;
-        b.hit = true;
-      }
+    const dx = targetX - x;
+    const dy = targetY - y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    this.velX = (dx / dist) * this.speed;
+    this.velY = (dy / dist) * this.speed;
+    this.isDead = false;
+  }
+
+  update() {
+    if (this.isDead) return;
+    this.x += this.velX;
+    this.y += this.velY;
+
+    // Remove bullet if out of bounds
+    if (
+      this.x < 0 ||
+      this.x > WIDTH ||
+      this.y < 0 ||
+      this.y > HEIGHT
+    ) {
+      this.isDead = true;
     }
   }
 
-  for (let mine of mines) {
-    bots.forEach(bot => {
-      if (Math.abs(bot.x - mine.x) < 10 && Math.abs(bot.y - mine.y) < 10) {
-        bot.health -= mine.damage;
-        explosions.push({ x: mine.x, y: mine.y, radius: 30, time: 30 });
-        mine.hit = true;
-      }
-    });
+  draw() {
+    if (this.isDead) return;
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+class Bot {
+  constructor() {
+    this.radius = 15;
+    this.x = Math.random() * (WIDTH - this.radius * 2) + this.radius;
+    this.y = Math.random() * (HEIGHT - this.radius * 2) + this.radius;
+    this.speed = 1.5;
+    this.health = 30;
+    this.color = "red";
+    this.isDead = false;
   }
 
-  for (let e of explosions) {
-    bots.forEach(bot => {
-      if (Math.hypot(bot.x - e.x, bot.y - e.y) < e.radius) {
-        bot.health -= 2;
-      }
-    });
+  moveToward(player) {
+    if (this.isDead) return;
+    const dx = player.x - this.x;
+    const dy = player.y - this.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > 1) {
+      this.x += (dx / dist) * this.speed;
+      this.y += (dy / dist) * this.speed;
+    }
   }
 
-  bullets = bullets.filter(b => !b.hit);
-  mines = mines.filter(m => !m.hit);
-  explosions.forEach(e => e.time--);
-  explosions = explosions.filter(e => e.time > 0);
+  draw() {
+    if (this.isDead) return;
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
-  bots = bots.filter(bot => {
-    if (bot.health <= 0) {
+  takeDamage(amount) {
+    this.health -= amount;
+    if (this.health <= 0) {
+      this.isDead = true;
       player.points += 10;
-      return false;
+      pointsDisplay.textContent = player.points;
     }
-    return true;
+  }
+}
+
+const player = new Player();
+const bots = [];
+const bullets = [];
+
+const shopItems = [
+  { name: "Starter Gun", cost: 0, damage: 10 },
+  { name: "Rocket Launcher", cost: 30, damage: 30 },
+  { name: "Landmine", cost: 20, damage: 50 },
+  { name: "Bomb", cost: 40, damage: 70 },
+];
+
+function spawnBots(count = 5) {
+  for (let i = 0; i < count; i++) {
+    bots.push(new Bot());
+  }
+}
+
+function handleInput() {
+  canvas.addEventListener("mousemove", (e) => {
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = e.clientX - rect.left;
+    mouse.y = e.clientY - rect.top;
+  });
+
+  canvas.addEventListener("mousedown", () => {
+    mouse.clicked = true;
+  });
+
+  canvas.addEventListener("mouseup", () => {
+    mouse.clicked = false;
+  });
+
+  window.addEventListener("keydown", (e) => {
+    keys[e.key.toLowerCase()] = true;
+  });
+  window.addEventListener("keyup", (e) => {
+    keys[e.key.toLowerCase()] = false;
   });
 }
 
-function updateHUD() {
-  document.getElementById("health").textContent = Math.floor(player.health);
-  document.getElementById("points").textContent = player.points;
-
-  if (player.health <= 0) {
-    alert("You died! Respawning...");
-    player.health = 100;
-    player.x = 400;
-    player.y = 300;
+function shoot() {
+  if (!player.isDead && mouse.clicked) {
+    if (!canShoot) return;
+    bullets.push(new Bullet(player.x, player.y, mouse.x, mouse.y, player.damage));
+    canShoot = false;
+    setTimeout(() => (canShoot = true), shootCooldown);
   }
 }
 
-function updateShopUI() {
-  const shopItems = {
-    rocket: 50,
-    mine: 30,
-    bomb: 40
-  };
+let canShoot = true;
+const shootCooldown = 300; // ms between shots
 
-  const container = document.getElementById("shop-items");
-  container.innerHTML = "";
+function update() {
+  player.move();
 
-  for (let item in shopItems) {
-    const owned = player.inventory.includes(item);
-    const btn = document.createElement("button");
-    btn.textContent = `${item} (${shopItems[item]} pts)`;
-    btn.disabled = owned;
-    btn.onclick = () => buy(item, shopItems[item]);
-    container.appendChild(btn);
+  // Move bots
+  bots.forEach((bot) => bot.moveToward(player));
+
+  // Update bullets
+  bullets.forEach((bullet) => bullet.update());
+
+  // Collision: bullets vs bots
+  bullets.forEach((bullet) => {
+    if (bullet.isDead) return;
+    bots.forEach((bot) => {
+      if (bot.isDead) return;
+      const dx = bullet.x - bot.x;
+      const dy = bullet.y - bot.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < bullet.radius + bot.radius) {
+        bot.takeDamage(bullet.damage);
+        bullet.isDead = true;
+      }
+    });
+  });
+
+  // Remove dead bullets and bots
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    if (bullets[i].isDead) bullets.splice(i, 1);
   }
+  for (let i = bots.length - 1; i >= 0; i--) {
+    if (bots[i].isDead) bots.splice(i, 1);
+  }
+
+  // Collision: bots vs player
+  bots.forEach((bot) => {
+    if (bot.isDead || player.isDead) return;
+    const dx = bot.x - player.x;
+    const dy = bot.y - player.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < bot.radius + player.radius) {
+      player.takeDamage(1);
+    }
+  });
 }
+
+function draw() {
+  ctx.clearRect(0, 0, WIDTH, HEIGHT);
+
+  player.draw();
+
+  bots.forEach((bot) => bot.draw());
+
+  bullets.forEach((bullet) => bullet.draw());
+}
+
+function gameLoop() {
+  if (!player.isDead) {
+    shoot();
+  }
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+// SHOP
 
 function openShop() {
-  updateShopUI();
-  document.getElementById("shop").style.display = "block";
+  shop.style.display = "block";
+  renderShopItems();
 }
 
 function closeShop() {
-  document.getElementById("shop").style.display = "none";
+  shop.style.display = "none";
 }
 
-function buy(item, cost) {
-  if (player.points >= cost) {
-    player.points -= cost;
-    player.inventory.push(item);
-    alert(`Bought: ${item}`);
-    saveGame();
+function renderShopItems() {
+  shopItemsDiv.innerHTML = "";
+  shopItems.forEach((item, i) => {
+    const btn = document.createElement("button");
+    btn.textContent = `${item.name} - ${item.cost} points`;
+    btn.disabled = player.points < item.cost;
+    btn.onclick = () => buyItem(i);
+    shopItemsDiv.appendChild(btn);
+  });
+}
+
+function buyItem(index) {
+  const item = shopItems[index];
+  if (player.points >= item.cost) {
+    player.points -= item.cost;
+    pointsDisplay.textContent = player.points;
+    player.damage = item.damage;
+    player.weapon = item.name;
+    alert(`You bought ${item.name}!`);
     closeShop();
   } else {
     alert("Not enough points!");
   }
 }
 
-function saveGame() {
-  localStorage.setItem("battleSave", JSON.stringify({
-    points: player.points,
-    inventory: player.inventory
-  }));
-}
+// INIT
 
-function loadGame() {
-  const data = JSON.parse(localStorage.getItem("battleSave"));
-  if (data) {
-    player.points = data.points;
-    player.inventory = data.inventory;
-  }
-}
+spawnBots(5);
+handleInput();
 
-// Event listeners for shop buttons
-document.getElementById("open-shop-btn").addEventListener("click", openShop);
-document.getElementById("close-shop-btn").addEventListener("click", closeShop);
-
-setInterval(spawnBot, 3000);
-loadGame();
-
-function gameLoop() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  movePlayer();
-  botAI();
-  updateBullets();
-  checkHits();
-
-  drawPlayer();
-  drawBots();
-  drawBullets();
-  drawMines();
-  drawExplosions();
-  updateHUD();
-
-  requestAnimationFrame(gameLoop);
-}
+openShopBtn.onclick = openShop;
+closeShopBtn.onclick = closeShop;
 
 gameLoop();
