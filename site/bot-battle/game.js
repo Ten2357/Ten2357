@@ -16,14 +16,13 @@ let player = {
 };
 
 const weaponData = {
-  gun: { speed: 5, damage: 10 },
-  rocket: { speed: 3, damage: 30 },
+  gun: { speed: 7, damage: 10 },
+  rocket: { speed: 4, damage: 30 },
   bomb: { speed: 2, damage: 40 },
   mine: { damage: 50 }
 };
 
 let keys = {};
-let facing = "right";
 let bullets = [];
 let bots = [];
 let mines = [];
@@ -32,37 +31,39 @@ let lastShotTime = 0;
 const shootCooldown = 300;
 
 document.addEventListener("keydown", (e) => {
-  keys[e.key] = true;
-  if (["w", "a", "s", "d"].includes(e.key)) {
-    if (e.key === "w") facing = "up";
-    if (e.key === "s") facing = "down";
-    if (e.key === "a") facing = "left";
-    if (e.key === "d") facing = "right";
-  }
+  keys[e.key.toLowerCase()] = true;
 });
-document.addEventListener("keyup", (e) => keys[e.key] = false);
-
-document.addEventListener("keydown", (e) => {
-  if (e.code === "Space") shoot();
-  if (e.key === "b") placeBomb();
-  if (e.key === "m") placeMine();
+document.addEventListener("keyup", (e) => {
+  keys[e.key.toLowerCase()] = false;
 });
 
-function shoot() {
+// Shoot towards mouse click
+canvas.addEventListener("click", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+  shootTowards(mouseX, mouseY);
+});
+
+function shootTowards(targetX, targetY) {
   const now = Date.now();
   if (now - lastShotTime < shootCooldown) return;
 
   const w = weaponData[player.weapon];
-  let dx = 0, dy = 0;
-  if (facing === "right") dx = w.speed;
-  if (facing === "left") dx = -w.speed;
-  if (facing === "up") dy = -w.speed;
-  if (facing === "down") dy = w.speed;
+  const startX = player.x + player.size / 2;
+  const startY = player.y + player.size / 2;
+  let dx = targetX - startX;
+  let dy = targetY - startY;
+  const dist = Math.hypot(dx, dy);
+  if (dist === 0) return;
+  dx = (dx / dist) * w.speed;
+  dy = (dy / dist) * w.speed;
 
   bullets.push({
-    x: player.x + player.size / 2,
-    y: player.y + player.size / 2,
-    dx, dy,
+    x: startX,
+    y: startY,
+    dx,
+    dy,
     size: 5,
     color: "yellow",
     damage: w.damage
@@ -87,8 +88,8 @@ function placeBomb() {
 
 function spawnBot() {
   bots.push({
-    x: Math.random() * 800,
-    y: Math.random() * 600,
+    x: Math.random() * (canvas.width - 20),
+    y: Math.random() * (canvas.height - 20),
     size: 20,
     health: 30
   });
@@ -129,6 +130,10 @@ function movePlayer() {
   if (keys["s"]) player.y += player.speed;
   if (keys["a"]) player.x -= player.speed;
   if (keys["d"]) player.x += player.speed;
+
+  // Keep player inside canvas
+  player.x = Math.max(0, Math.min(canvas.width - player.size, player.x));
+  player.y = Math.max(0, Math.min(canvas.height - player.size, player.y));
 }
 
 function botAI() {
@@ -149,14 +154,18 @@ function updateBullets() {
     b.x += b.dx;
     b.y += b.dy;
   });
-  bullets = bullets.filter(b => b.x >= 0 && b.x <= 800 && b.y >= 0 && b.y <= 600);
+  bullets = bullets.filter(b => b.x >= 0 && b.x <= canvas.width && b.y >= 0 && b.y <= canvas.height);
 }
 
 function checkHits() {
   for (let b of bullets) {
     for (let bot of bots) {
-      if (b.x < bot.x + bot.size && b.x + b.size > bot.x &&
-          b.y < bot.y + bot.size && b.y + b.size > bot.y) {
+      if (
+        b.x < bot.x + bot.size &&
+        b.x + b.size > bot.x &&
+        b.y < bot.y + bot.size &&
+        b.y + b.size > bot.y
+      ) {
         bot.health -= b.damage;
         b.hit = true;
       }
