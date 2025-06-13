@@ -1,52 +1,73 @@
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
-  background: #222;
-  color: white;
-  user-select: none;
-}
-
-#gameCanvas {
-  background: #111;
-  display: block;
-  margin: 0 auto;
-  border: 2px solid #555;
-}
-
-#hud {
-  width: 800px;
-  margin: 10px auto;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #111;
+  color: #fff;
   display: flex;
-  justify-content: space-between;
-  font-size: 18px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100vh;
+  overflow: hidden;
 }
 
-#shop {
-  position: fixed;
-  top: 50%;
+canvas {
+  border: 2px solid #fff;
+  background-color: #000;
+  margin-top: 10px;
+}
+
+.hud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+  justify-content: center;
+  align-items: center;
+}
+
+.hud span, .hud button, .hud select {
+  background-color: #222;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.hud button:hover, .hud select:hover {
+  background-color: #333;
+}
+
+.shop {
+  position: absolute;
+  top: 100px;
   left: 50%;
-  width: 300px;
+  transform: translateX(-50%);
+  background-color: #222;
   padding: 20px;
-  background: #333;
-  border: 2px solid #666;
-  transform: translate(-50%, -50%);
-  display: none;
+  border-radius: 12px;
+  box-shadow: 0 0 20px #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   z-index: 10;
 }
 
-#shop h2 {
-  margin-top: 0;
-  text-align: center;
-}
-
-#shop button {
-  width: 100%;
-  margin: 5px 0;
-  padding: 8px;
-  font-size: 16px;
+.shop button {
+  background-color: #444;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
   cursor: pointer;
 }
 
-#open-shop-btn {
-  cursor: pointer;
+.shop button:hover {
+  background-color: #555;
+}
+
+.hidden {
+  display: none;
 }
