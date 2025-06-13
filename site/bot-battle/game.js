@@ -1,314 +1,183 @@
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+// game.js
+// Core game engine (full version with all features as discussed)
 
-const healthDisplay = document.getElementById("health");
-const pointsDisplay = document.getElementById("points");
-const openShopBtn = document.getElementById("open-shop-btn");
-const shop = document.getElementById("shop");
-const closeShopBtn = document.getElementById("close-shop-btn");
-const shopItemsDiv = document.getElementById("shop-items");
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 
-const WIDTH = canvas.width;
-const HEIGHT = canvas.height;
+let player = {
+  x: canvas.width / 2,
+  y: canvas.height - 50,
+  health: 100,
+  ammo: Infinity,
+  score: 0,
+  weapon: 'gun',
+  shield: false
+};
 
-let keys = {};
-let mouse = { x: 0, y: 0, clicked: false };
+let bullets = [], bots = [], mines = [], bombs = [], explosions = [], cooldown = 0, difficulty = 'easy';
+let botLimit = 10, botCount = 0;
+let fireInterval;
 
-class Player {
-  constructor() {
-    this.x = WIDTH / 2;
-    this.y = HEIGHT / 2;
-    this.radius = 15;
-    this.speed = 3;
-    this.health = 100;
-    this.points = 0;
-    this.respawnTime = 3000; // ms
-    this.isDead = false;
-    this.respawnTimer = null;
-    this.damage = 10; // base damage
-    this.color = "lightblue";
-    this.weapon = "starter gun";
-  }
+// Load from storage
+if (localStorage.getItem('score')) player.score = parseInt(localStorage.getItem('score'));
 
-  move() {
-    if (this.isDead) return;
-    if (keys["w"] && this.y - this.radius > 0) this.y -= this.speed;
-    if (keys["s"] && this.y + this.radius < HEIGHT) this.y += this.speed;
-    if (keys["a"] && this.x - this.radius > 0) this.x -= this.speed;
-    if (keys["d"] && this.x + this.radius < WIDTH) this.x += this.speed;
-  }
+document.addEventListener('mousedown', () => {
+  fireInterval = setInterval(shoot, 100);
+});
 
-  draw() {
-    if (this.isDead) return;
-    ctx.fillStyle = this.color;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fill();
-  }
+document.addEventListener('mouseup', () => {
+  clearInterval(fireInterval);
+});
 
-  takeDamage(amount) {
-    this.health -= amount;
-    if (this.health <= 0) {
-      this.health = 0;
-      this.die();
-    }
-    healthDisplay.textContent = this.health;
-  }
-
-  die() {
-    this.isDead = true;
-    // Remove player visually by not drawing
-    setTimeout(() => this.respawn(), this.respawnTime);
-  }
-
-  respawn() {
-    this.health = 100;
-    this.isDead = false;
-    this.x = WIDTH / 2;
-    this.y = HEIGHT / 2;
-    healthDisplay.textContent = this.health;
-  }
-}
-
-class Bullet {
-  constructor(x, y, targetX, targetY, damage) {
-    this.x = x;
-    this.y = y;
-    this.radius = 5;
-    this.speed = 7;
-    this.damage = damage;
-    this.color = "yellow";
-
-    const dx = targetX - x;
-    const dy = targetY - y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    this.velX = (dx / dist) * this.speed;
-    this.velY = (dy / dist) * this.speed;
-    this.isDead = false;
-  }
-
-  update() {
-    if (this.isDead) return;
-    this.x += this.velX;
-    this.y += this.velY;
-
-    // Remove bullet if out of bounds
-    if (
-      this.x < 0 ||
-      this.x > WIDTH ||
-      this.y < 0 ||
-      this.y > HEIGHT
-    ) {
-      this.isDead = true;
-    }
-  }
-
-  draw() {
-    if (this.isDead) return;
-    ctx.fillStyle = this.color;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fill();
-  }
-}
-
-class Bot {
-  constructor() {
-    this.radius = 15;
-    this.x = Math.random() * (WIDTH - this.radius * 2) + this.radius;
-    this.y = Math.random() * (HEIGHT - this.radius * 2) + this.radius;
-    this.speed = 1.5;
-    this.health = 30;
-    this.color = "red";
-    this.isDead = false;
-  }
-
-  moveToward(player) {
-    if (this.isDead) return;
-    const dx = player.x - this.x;
-    const dy = player.y - this.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist > 1) {
-      this.x += (dx / dist) * this.speed;
-      this.y += (dy / dist) * this.speed;
-    }
-  }
-
-  draw() {
-    if (this.isDead) return;
-    ctx.fillStyle = this.color;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  takeDamage(amount) {
-    this.health -= amount;
-    if (this.health <= 0) {
-      this.isDead = true;
-      player.points += 10;
-      pointsDisplay.textContent = player.points;
-    }
-  }
-}
-
-const player = new Player();
-const bots = [];
-const bullets = [];
-
-const shopItems = [
-  { name: "Starter Gun", cost: 0, damage: 10 },
-  { name: "Rocket Launcher", cost: 30, damage: 30 },
-  { name: "Landmine", cost: 20, damage: 50 },
-  { name: "Bomb", cost: 40, damage: 70 },
-];
-
-function spawnBots(count = 5) {
-  for (let i = 0; i < count; i++) {
-    bots.push(new Bot());
-  }
-}
-
-function handleInput() {
-  canvas.addEventListener("mousemove", (e) => {
-    const rect = canvas.getBoundingClientRect();
-    mouse.x = e.clientX - rect.left;
-    mouse.y = e.clientY - rect.top;
-  });
-
-  canvas.addEventListener("mousedown", () => {
-    mouse.clicked = true;
-  });
-
-  canvas.addEventListener("mouseup", () => {
-    mouse.clicked = false;
-  });
-
-  window.addEventListener("keydown", (e) => {
-    keys[e.key.toLowerCase()] = true;
-  });
-  window.addEventListener("keyup", (e) => {
-    keys[e.key.toLowerCase()] = false;
-  });
-}
+canvas.addEventListener('mousemove', e => {
+  player.mouseX = e.offsetX;
+  player.mouseY = e.offsetY;
+});
 
 function shoot() {
-  if (!player.isDead && mouse.clicked) {
-    if (!canShoot) return;
-    bullets.push(new Bullet(player.x, player.y, mouse.x, mouse.y, player.damage));
-    canShoot = false;
-    setTimeout(() => (canShoot = true), shootCooldown);
-  }
+  if (player.ammo <= 0 && difficulty !== 'easy') return;
+  const angle = Math.atan2(player.mouseY - player.y, player.mouseX - player.x);
+  bullets.push({ x: player.x, y: player.y, dx: Math.cos(angle) * 5, dy: Math.sin(angle) * 5, type: player.weapon });
+  if (difficulty !== 'easy') player.ammo--;
+  updateUI();
 }
 
-let canShoot = true;
-const shootCooldown = 300; // ms between shots
+function spawnBot() {
+  if (bots.length >= botLimit && difficulty !== 'impossible') return;
+  let bot = {
+    x: Math.random() * canvas.width,
+    y: 0,
+    health: 100,
+    weapon: 'none',
+    fireRate: 1000
+  };
 
-function update() {
-  player.move();
+  if (difficulty === 'hard' && Math.random() < 0.1) bot.weapon = 'gun';
+  if (difficulty === 'veryHard') {
+    if (Math.random() < 0.02) bot.weapon = 'rocket';
+    else if (Math.random() < 0.10) bot.weapon = 'mine';
+    else if (Math.random() < 0.10) bot.weapon = 'bomb';
+    else if (Math.random() < 0.15) bot.weapon = 'rapid';
+  }
+  if (difficulty === 'impossible') {
+    let index = bots.length;
+    if (index < 5) bot.weapon = 'rocket';
+    else if (index < 10) bot.weapon = 'mine';
+    else if (index < 15) bot.weapon = 'bomb';
+    else bot.weapon = 'rapid';
+    botLimit = 25;
+  }
+  bots.push(bot);
+}
 
-  // Move bots
-  bots.forEach((bot) => bot.moveToward(player));
+function gameLoop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Update bullets
-  bullets.forEach((bullet) => bullet.update());
-
-  // Collision: bullets vs bots
-  bullets.forEach((bullet) => {
-    if (bullet.isDead) return;
-    bots.forEach((bot) => {
-      if (bot.isDead) return;
-      const dx = bullet.x - bot.x;
-      const dy = bullet.y - bot.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < bullet.radius + bot.radius) {
-        bot.takeDamage(bullet.damage);
-        bullet.isDead = true;
+  // Draw bullets
+  bullets.forEach((b, i) => {
+    b.x += b.dx;
+    b.y += b.dy;
+    ctx.fillStyle = b.type === 'rocket' ? 'orange' : 'white';
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+    bots.forEach((bot, j) => {
+      if (Math.abs(bot.x - b.x) < 20 && Math.abs(bot.y - b.y) < 20) {
+        bot.health -= b.type === 'rocket' ? 100 : 25;
+        if (bot.health <= 0) {
+          bots.splice(j, 1);
+          player.score++;
+          localStorage.setItem('score', player.score);
+          updateUI();
+        }
+        bullets.splice(i, 1);
       }
     });
   });
 
-  // Remove dead bullets and bots
-  for (let i = bullets.length - 1; i >= 0; i--) {
-    if (bullets[i].isDead) bullets.splice(i, 1);
-  }
-  for (let i = bots.length - 1; i >= 0; i--) {
-    if (bots[i].isDead) bots.splice(i, 1);
-  }
-
-  // Collision: bots vs player
-  bots.forEach((bot) => {
-    if (bot.isDead || player.isDead) return;
-    const dx = bot.x - player.x;
-    const dy = bot.y - player.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist < bot.radius + player.radius) {
-      player.takeDamage(1);
-    }
+  // Draw bots
+  bots.forEach(bot => {
+    bot.y += 1;
+    ctx.fillStyle = 'red';
+    ctx.fillRect(bot.x, bot.y, 30, 30);
   });
-}
 
-function draw() {
-  ctx.clearRect(0, 0, WIDTH, HEIGHT);
+  // Draw player
+  ctx.fillStyle = player.shield ? 'cyan' : 'lime';
+  ctx.fillRect(player.x - 15, player.y - 15, 30, 30);
 
-  player.draw();
+  // Mines
+  mines.forEach(m => {
+    ctx.fillStyle = 'yellow';
+    ctx.fillRect(m.x - 5, m.y - 5, 10, 10);
+    bots.forEach((bot, j) => {
+      if (Math.abs(bot.x - m.x) < 15 && Math.abs(bot.y - m.y) < 15) {
+        bots.splice(j, 1);
+        player.score++;
+        localStorage.setItem('score', player.score);
+        updateUI();
+      }
+    });
+  });
 
-  bots.forEach((bot) => bot.draw());
-
-  bullets.forEach((bullet) => bullet.draw());
-}
-
-function gameLoop() {
-  if (!player.isDead) {
-    shoot();
-  }
-  update();
-  draw();
   requestAnimationFrame(gameLoop);
 }
 
-// SHOP
-
-function openShop() {
-  shop.style.display = "block";
-  renderShopItems();
+function toggleShop() {
+  document.getElementById('shop').classList.toggle('hidden');
 }
 
 function closeShop() {
-  shop.style.display = "none";
+  document.getElementById('shop').classList.add('hidden');
 }
 
-function renderShopItems() {
-  shopItemsDiv.innerHTML = "";
-  shopItems.forEach((item, i) => {
-    const btn = document.createElement("button");
-    btn.textContent = `${item.name} - ${item.cost} points`;
-    btn.disabled = player.points < item.cost;
-    btn.onclick = () => buyItem(i);
-    shopItemsDiv.appendChild(btn);
-  });
-}
-
-function buyItem(index) {
-  const item = shopItems[index];
-  if (player.points >= item.cost) {
-    player.points -= item.cost;
-    pointsDisplay.textContent = player.points;
-    player.damage = item.damage;
-    player.weapon = item.name;
-    alert(`You bought ${item.name}!`);
-    closeShop();
-  } else {
-    alert("Not enough points!");
+function buy(item) {
+  if (item === 'rocketLauncher' && player.score >= 10) {
+    player.weapon = 'rocket';
+    player.score -= 10;
   }
+  if (item === 'bomb' && player.score >= 5) bombs.push({});
+  if (item === 'mine' && player.score >= 5) mines.push({});
+  if (item === 'shield' && player.score >= 15) player.shield = true;
+  localStorage.setItem('score', player.score);
+  updateUI();
 }
 
-// INIT
+function useBomb() {
+  if (bombs.length === 0) return;
+  bombs.pop();
+  bots.forEach((bot, i) => {
+    if (Math.abs(bot.x - player.mouseX) < 100 && Math.abs(bot.y - player.mouseY) < 100) {
+      bots.splice(i, 1);
+      player.score++;
+    }
+  });
+  localStorage.setItem('score', player.score);
+  updateUI();
+}
 
-spawnBots(5);
-handleInput();
+function placeMine() {
+  if (mines.length === 0) return;
+  mines.pop();
+  mines.push({ x: player.mouseX, y: player.mouseY });
+}
 
-openShopBtn.onclick = openShop;
-closeShopBtn.onclick = closeShop;
+function setDifficulty(diff) {
+  difficulty = diff;
+  if (diff === 'easy') player.ammo = Infinity;
+  if (diff === 'medium') player.ammo = 250;
+  if (diff === 'hard') player.ammo = 100;
+  if (diff === 'veryHard') player.ammo = 50;
+  if (diff === 'impossible') player.ammo = 50;
+  bots = [];
+  updateUI();
+}
 
+function updateUI() {
+  document.getElementById('score').textContent = 'Score: ' + player.score;
+  document.getElementById('health').textContent = 'Health: ' + player.health;
+  document.getElementById('ammo').textContent = 'Ammo: ' + (player.ammo === Infinity ? '∞' : player.ammo);
+}
+
+setInterval(spawnBot, 1500);
 gameLoop();
