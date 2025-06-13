@@ -1,38 +1,80 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>2D Battle Bot Game</title>
-<link rel="stylesheet" href="style.css" />
-</head>
-<body>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
 
-<h1>2D Bot Battle</h1>
+let bullets = [];
+let lastShotTime = 0;
+const shootCooldown = 300;
 
-<div id="hud">
-  <div>Health: <span id="health">100</span></div>
-  <div>Points: <span id="points">0</span></div>
-  <button id="openShopBtn">Open Shop</button>
-</div>
+const player = {
+  x: 400,
+  y: 300,
+  size: 20,
+  weapon: "gun"
+};
 
-<canvas id="gameCanvas" width="800" height="600"></canvas>
+const weaponData = {
+  gun: { speed: 7, damage: 10 }
+};
 
-<div id="shop" class="hidden">
-  <h2>Shop</h2>
-  <div id="shop-items"></div>
-  <button id="closeShopBtn">Close Shop</button>
-</div>
+canvas.addEventListener("click", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+  shootTowards(mouseX, mouseY);
+});
 
-<script src="game.js"></script>
-<script>
-  document.getElementById("openShopBtn").onclick = () => {
-    document.getElementById("shop").classList.remove("hidden");
-  };
-  document.getElementById("closeShopBtn").onclick = () => {
-    document.getElementById("shop").classList.add("hidden");
-  };
-</script>
+function shootTowards(targetX, targetY) {
+  const now = Date.now();
+  if (now - lastShotTime < shootCooldown) return;
 
-</body>
-</html>
+  const w = weaponData[player.weapon];
+  const startX = player.x + player.size / 2;
+  const startY = player.y + player.size / 2;
+  let dx = targetX - startX;
+  let dy = targetY - startY;
+  const dist = Math.hypot(dx, dy);
+  if (dist === 0) return;
+  dx = (dx / dist) * w.speed;
+  dy = (dy / dist) * w.speed;
+
+  bullets.push({
+    x: startX,
+    y: startY,
+    dx,
+    dy,
+    size: 5,
+    color: "yellow",
+    damage: w.damage
+  });
+
+  lastShotTime = now;
+}
+
+function updateBullets() {
+  bullets.forEach(b => {
+    b.x += b.dx;
+    b.y += b.dy;
+  });
+  bullets = bullets.filter(b => b.x >= 0 && b.x <= 800 && b.y >= 0 && b.y <= 600);
+}
+
+function draw() {
+  ctx.clearRect(0, 0, 800, 600);
+  // draw player
+  ctx.fillStyle = "lime";
+  ctx.fillRect(player.x, player.y, player.size, player.size);
+
+  // draw bullets
+  bullets.forEach(b => {
+    ctx.fillStyle = b.color;
+    ctx.fillRect(b.x, b.y, b.size, b.size);
+  });
+}
+
+function gameLoop() {
+  updateBullets();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
