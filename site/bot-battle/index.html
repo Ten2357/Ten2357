@@ -1,28 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>2D Battle Game</title>
-<link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2D Bot Battle</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div class="hud">
+    <span id="score">Score: 0</span>
+    <span id="health">Health: 100</span>
+    <span id="ammo">Ammo: ∞</span>
+    <button onclick="toggleShop()">Open Shop</button>
+    <button onclick="useBomb()">Use Bomb</button>
+    <button onclick="placeMine()">Place Mine</button>
+    <select onchange="setDifficulty(this.value)">
+      <option value="easy">Easy</option>
+      <option value="medium">Medium</option>
+      <option value="hard">Hard</option>
+      <option value="veryHard">Very Hard</option>
+      <option value="impossible">Impossible</option>
+    </select>
+  </div>
 
-<div id="hud">
-  <div>Health: <span id="health">100</span></div>
-  <div>Points: <span id="points">0</span></div>
-  <button id="open-shop-btn">Open Shop</button>
-</div>
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
 
-<canvas id="gameCanvas" width="800" height="600"></canvas>
+  <div id="shop" class="shop hidden">
+    <h2>Shop</h2>
+    <button onclick="buy('rocketLauncher')">Rocket Launcher (10 pts)</button>
+    <button onclick="buy('bomb')">Bomb (5 pts)</button>
+    <button onclick="buy('mine')">Mine (5 pts)</button>
+    <button onclick="buy('shield')">Shield (15 pts)</button>
+    <button onclick="closeShop()">Close Shop</button>
+  </div>
 
-<div id="shop">
-  <h2>Shop</h2>
-  <div id="shop-items"></div>
-  <button id="close-shop-btn">Close Shop</button>
-</div>
-
-<script src="game.js"></script>
-
+  <script src="game.js"></script>
 </body>
 </html>
