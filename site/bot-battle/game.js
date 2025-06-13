@@ -43,7 +43,7 @@ document.addEventListener("keydown", (e) => {
 document.addEventListener("keyup", (e) => keys[e.key] = false);
 
 document.addEventListener("keydown", (e) => {
-  if (e.key === " ") shoot();
+  if (e.code === "Space") shoot();
   if (e.key === "b") placeBomb();
   if (e.key === "m") placeMine();
 });
@@ -202,9 +202,10 @@ function updateHUD() {
   document.getElementById("points").textContent = player.points;
 
   if (player.health <= 0) {
-    alert("You died! Restarting game.");
-    localStorage.clear();
-    location.reload();
+    alert("You died! Respawning...");
+    player.health = 100;
+    player.x = 400;
+    player.y = 300;
   }
 }
 
