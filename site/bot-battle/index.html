@@ -1,17 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>2D Bot Battle Game</title>
-  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Full black background */
+    body, html {
+      margin: 0;
+      padding: 0;
+      background-color: black;
+      color: white;
+      font-family: Arial, sans-serif;
+      user-select: none;
+    }
+    /* Canvas styling */
+    #gameCanvas {
+      display: block;
+      background-color: black;
+      margin: 0 auto;
+      border: 1px solid white;
+      cursor: crosshair;
+    }
+    /* UI container */
+    #ui {
+      text-align: center;
+      margin: 10px 0;
+    }
+    #ui button {
+      margin: 0 5px;
+      padding: 5px 10px;
+      cursor: pointer;
+      background-color: #222;
+      color: white;
+      border: 1px solid #555;
+      border-radius: 4px;
+      transition: background-color 0.3s;
+    }
+    #ui button:hover {
+      background-color: #555;
+    }
+    /* Shop styling */
+    #shop {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #111;
+      border: 2px solid white;
+      padding: 20px;
+      width: 300px;
+      color: white;
+      z-index: 100;
+      display: none;
+      box-shadow: 0 0 15px white;
+      border-radius: 8px;
+    }
+    #shop h2 {
+      margin-top: 0;
+      text-align: center;
+    }
+    #shop button {
+      width: 100%;
+      margin: 8px 0;
+      padding: 10px;
+      font-size: 16px;
+      background-color: #222;
+      border: 1px solid #555;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    #shop button:hover {
+      background-color: #555;
+    }
+    /* Hidden class for toggling */
+    .hidden {
+      display: none !important;
+    }
+  </style>
 </head>
 <body>
   <canvas id="gameCanvas" width="800" height="600"></canvas>
 
   <div id="ui">
-    <div id="score">Score: 0</div>
-    <div id="health">Health: 100</div>
-    <div id="ammo">Ammo: ∞</div>
+    <span id="score">Score: 0</span> |
+    <span id="health">Health: 100</span> |
+    <span id="ammo">Ammo: ∞</span><br /><br />
     <button onclick="toggleShop()">Open Shop</button>
     <button onclick="useBomb()">Use Bomb</button>
     <button onclick="placeMine()">Place Mine</button>
@@ -19,13 +93,34 @@
 
   <div id="shop" class="hidden">
     <h2>Shop</h2>
-    <button onclick="buy('rocketLauncher')">Buy Rocket Launcher (10 pts)</button><br>
-    <button onclick="buy('bomb')">Buy Bomb (5 pts)</button><br>
-    <button onclick="buy('mine')">Buy Mine (5 pts)</button><br>
-    <button onclick="buy('shield')">Buy Shield (15 pts)</button><br>
+    <button onclick="buy('rocketLauncher')">Buy Rocket Launcher (10 pts)</button>
+    <button onclick="buy('bomb')">Buy Bomb (5 pts)</button>
+    <button onclick="buy('mine')">Buy Mine (5 pts)</button>
+    <button onclick="buy('shield')">Buy Shield (15 pts)</button>
     <button onclick="closeShop()">Close Shop</button>
   </div>
 
-  <script src="game.js"></script>
+  <script>
+    // Stub functions so buttons don't error
+    function toggleShop() {
+      const shop = document.getElementById('shop');
+      shop.classList.toggle('hidden');
+    }
+    function closeShop() {
+      document.getElementById('shop').classList.add('hidden');
+    }
+    function buy(item) {
+      alert('Buy ' + item + ' clicked');
+    }
+    function useBomb() {
+      alert('Use bomb clicked');
+    }
+    function placeMine() {
+      alert('Place mine clicked');
+    }
+  </script>
+
+  <!-- Link your game.js here -->
+  <!-- <script src="game.js"></script> -->
 </body>
 </html>
