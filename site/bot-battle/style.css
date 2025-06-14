@@ -1,9 +1,8 @@
 // game.js
-// Core game engine (cleaned version without difficulty setting)
+// Core game engine (cleaned version with no difficulty system and black background)
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-canvas.style.background = 'black';
 
 let player = {
   x: canvas.width / 2,
@@ -42,13 +41,16 @@ function spawnBot() {
   let bot = {
     x: Math.random() * canvas.width,
     y: 0,
-    health: 100
+    health: 100,
+    weapon: 'none',
+    fireRate: 1000
   };
   bots.push(bot);
 }
 
 function gameLoop() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   if (keys['w'] || keys['arrowup']) player.y -= 5;
   if (keys['s'] || keys['arrowdown']) player.y += 5;
@@ -156,12 +158,3 @@ function placeMine() {
   mines.pop();
   mines.push({ x: player.mouseX, y: player.mouseY });
 }
-
-function updateUI() {
-  document.getElementById('score').textContent = 'Score: ' + player.score;
-  document.getElementById('health').textContent = 'Health: ' + player.health;
-  document.getElementById('ammo').textContent = 'Ammo: ' + (player.ammo === Infinity ? '∞' : player.ammo);
-}
-
-setInterval(spawnBot, 1500);
-gameLoop();
