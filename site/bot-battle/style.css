@@ -1,5 +1,5 @@
 // game.js
-// Core game engine (cleaned version with no difficulty system and black background)
+// Core game engine (cleaned up without difficulty system, black background, fixed shop)
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -49,6 +49,7 @@ function spawnBot() {
 }
 
 function gameLoop() {
+  // Fill background black
   ctx.fillStyle = 'black';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -158,3 +159,12 @@ function placeMine() {
   mines.pop();
   mines.push({ x: player.mouseX, y: player.mouseY });
 }
+
+function updateUI() {
+  document.getElementById('score').textContent = 'Score: ' + player.score;
+  document.getElementById('health').textContent = 'Health: ' + player.health;
+  document.getElementById('ammo').textContent = 'Ammo: ∞';
+}
+
+setInterval(spawnBot, 1500);
+gameLoop();
