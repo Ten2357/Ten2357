@@ -1,5 +1,5 @@
 // game.js
-// Core game engine (full version with all features as discussed)
+// Core game engine (cleaned up without difficulty system, black background, fixed shop)
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -14,36 +14,30 @@ let player = {
   shield: false
 };
 
-let bullets = [], bots = [], mines = [], bombs = [], explosions = [], cooldown = 0, difficulty = 'easy';
-let botLimit = 10, botCount = 0;
+let bullets = [], bots = [], mines = [], bombs = [], explosions = [], cooldown = 0;
+let botLimit = 10;
 let fireInterval;
+let keys = {};
 
-// Load from storage
 if (localStorage.getItem('score')) player.score = parseInt(localStorage.getItem('score'));
 
-document.addEventListener('mousedown', () => {
-  fireInterval = setInterval(shoot, 100);
-});
-
-document.addEventListener('mouseup', () => {
-  clearInterval(fireInterval);
-});
-
+document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+document.addEventListener('mousedown', () => { fireInterval = setInterval(shoot, 100); });
+document.addEventListener('mouseup', () => { clearInterval(fireInterval); });
 canvas.addEventListener('mousemove', e => {
   player.mouseX = e.offsetX;
   player.mouseY = e.offsetY;
 });
 
 function shoot() {
-  if (player.ammo <= 0 && difficulty !== 'easy') return;
   const angle = Math.atan2(player.mouseY - player.y, player.mouseX - player.x);
   bullets.push({ x: player.x, y: player.y, dx: Math.cos(angle) * 5, dy: Math.sin(angle) * 5, type: player.weapon });
-  if (difficulty !== 'easy') player.ammo--;
   updateUI();
 }
 
 function spawnBot() {
-  if (bots.length >= botLimit && difficulty !== 'impossible') return;
+  if (bots.length >= botLimit) return;
   let bot = {
     x: Math.random() * canvas.width,
     y: 0,
@@ -51,29 +45,21 @@ function spawnBot() {
     weapon: 'none',
     fireRate: 1000
   };
-
-  if (difficulty === 'hard' && Math.random() < 0.1) bot.weapon = 'gun';
-  if (difficulty === 'veryHard') {
-    if (Math.random() < 0.02) bot.weapon = 'rocket';
-    else if (Math.random() < 0.10) bot.weapon = 'mine';
-    else if (Math.random() < 0.10) bot.weapon = 'bomb';
-    else if (Math.random() < 0.15) bot.weapon = 'rapid';
-  }
-  if (difficulty === 'impossible') {
-    let index = bots.length;
-    if (index < 5) bot.weapon = 'rocket';
-    else if (index < 10) bot.weapon = 'mine';
-    else if (index < 15) bot.weapon = 'bomb';
-    else bot.weapon = 'rapid';
-    botLimit = 25;
-  }
   bots.push(bot);
 }
 
 function gameLoop() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Fill background black
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Draw bullets
+  if (keys['w'] || keys['arrowup']) player.y -= 5;
+  if (keys['s'] || keys['arrowdown']) player.y += 5;
+  if (keys['a'] || keys['arrowleft']) player.x -= 5;
+  if (keys['d'] || keys['arrowright']) player.x += 5;
+  player.x = Math.max(15, Math.min(canvas.width - 15, player.x));
+  player.y = Math.max(15, Math.min(canvas.height - 15, player.y));
+
   bullets.forEach((b, i) => {
     b.x += b.dx;
     b.y += b.dy;
@@ -95,18 +81,30 @@ function gameLoop() {
     });
   });
 
-  // Draw bots
-  bots.forEach(bot => {
-    bot.y += 1;
+  bots.forEach((bot, i) => {
+    let dx = player.x - bot.x;
+    let dy = player.y - bot.y;
+    let dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > 1) {
+      bot.x += dx / dist;
+      bot.y += dy / dist;
+    }
     ctx.fillStyle = 'red';
     ctx.fillRect(bot.x, bot.y, 30, 30);
+
+    if (Math.abs(bot.x - player.x) < 20 && Math.abs(bot.y - player.y) < 20) {
+      player.health -= 1;
+      if (player.health <= 0) {
+        bots = [];
+        player.health = 100;
+        updateUI();
+      }
+    }
   });
 
-  // Draw player
   ctx.fillStyle = player.shield ? 'cyan' : 'lime';
   ctx.fillRect(player.x - 15, player.y - 15, 30, 30);
 
-  // Mines
   mines.forEach(m => {
     ctx.fillStyle = 'yellow';
     ctx.fillRect(m.x - 5, m.y - 5, 10, 10);
@@ -162,21 +160,10 @@ function placeMine() {
   mines.push({ x: player.mouseX, y: player.mouseY });
 }
 
-function setDifficulty(diff) {
-  difficulty = diff;
-  if (diff === 'easy') player.ammo = Infinity;
-  if (diff === 'medium') player.ammo = 250;
-  if (diff === 'hard') player.ammo = 100;
-  if (diff === 'veryHard') player.ammo = 50;
-  if (diff === 'impossible') player.ammo = 50;
-  bots = [];
-  updateUI();
-}
-
 function updateUI() {
   document.getElementById('score').textContent = 'Score: ' + player.score;
   document.getElementById('health').textContent = 'Health: ' + player.health;
-  document.getElementById('ammo').textContent = 'Ammo: ' + (player.ammo === Infinity ? '∞' : player.ammo);
+  document.getElementById('ammo').textContent = 'Ammo: ∞';
 }
 
 setInterval(spawnBot, 1500);
