@@ -1,8 +1,9 @@
 // game.js
-// Core game engine (basic version reset)
+// Core game engine with difficulties, working shop, and black background
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+canvas.style.backgroundColor = 'black';
 
 let player = {
   x: canvas.width / 2,
@@ -27,8 +28,10 @@ canvas.addEventListener('mousemove', e => {
 });
 
 function shoot() {
+  if (player.ammo <= 0) return;
   const angle = Math.atan2(player.mouseY - player.y, player.mouseX - player.x);
   bullets.push({ x: player.x, y: player.y, dx: Math.cos(angle) * 5, dy: Math.sin(angle) * 5 });
+  if (player.ammo !== Infinity) player.ammo--;
   updateUI();
 }
 
@@ -99,11 +102,35 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
+function toggleShop() {
+  document.getElementById('shop').classList.toggle('hidden');
+}
+
+function buy(item) {
+  if (item === 'gun' && player.score >= 5) {
+    player.weapon = 'gun';
+    player.score -= 5;
+  }
+  localStorage.setItem('score', player.score);
+  updateUI();
+}
+
 function setDifficulty(diff) {
   difficulty = diff;
   bots = [];
+  if (difficulty === 'easy') player.ammo = Infinity;
+  else if (difficulty === 'medium') player.ammo = 250;
+  else if (difficulty === 'hard') player.ammo = 100;
+  else if (difficulty === 'veryHard') player.ammo = 50;
+  else if (difficulty === 'impossible') player.ammo = 25;
   updateUI();
 }
 
 function updateUI() {
-  document.getElementById('score').textContent = 'Score: ' + pla
+  document.getElementById('score').textContent = 'Score: ' + player.score;
+  document.getElementById('health').textContent = 'Health: ' + player.health;
+  document.getElementById('ammo').textContent = 'Ammo: ' + (player.ammo === Infinity ? '∞' : player.ammo);
+}
+
+setInterval(spawnBot, 1500);
+gameLoop();
