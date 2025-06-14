@@ -1,126 +1,431 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>2D Bot Battle Game</title>
-  <style>
-    /* Full black background */
-    body, html {
-      margin: 0;
-      padding: 0;
-      background-color: black;
-      color: white;
-      font-family: Arial, sans-serif;
-      user-select: none;
-    }
-    /* Canvas styling */
-    #gameCanvas {
-      display: block;
-      background-color: black;
-      margin: 0 auto;
-      border: 1px solid white;
-      cursor: crosshair;
-    }
-    /* UI container */
-    #ui {
-      text-align: center;
-      margin: 10px 0;
-    }
-    #ui button {
-      margin: 0 5px;
-      padding: 5px 10px;
-      cursor: pointer;
-      background-color: #222;
-      color: white;
-      border: 1px solid #555;
-      border-radius: 4px;
-      transition: background-color 0.3s;
-    }
-    #ui button:hover {
-      background-color: #555;
-    }
-    /* Shop styling */
-    #shop {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background-color: #111;
-      border: 2px solid white;
-      padding: 20px;
-      width: 300px;
-      color: white;
-      z-index: 100;
-      display: none;
-      box-shadow: 0 0 15px white;
-      border-radius: 8px;
-    }
-    #shop h2 {
-      margin-top: 0;
-      text-align: center;
-    }
-    #shop button {
-      width: 100%;
-      margin: 8px 0;
-      padding: 10px;
-      font-size: 16px;
-      background-color: #222;
-      border: 1px solid #555;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-    #shop button:hover {
-      background-color: #555;
-    }
-    /* Hidden class for toggling */
-    .hidden {
-      display: none !important;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>2D Battle Game</title>
+<style>
+  /* Reset and black background */
+  body, html {
+    margin: 0; padding: 0; height: 100%; background: #000;
+    color: #eee; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+  }
+  #gameContainer {
+    display: flex; height: 100vh; width: 100vw;
+  }
+  canvas {
+    background: #111;
+    flex-grow: 1;
+    display: block;
+  }
+  #uiPanel {
+    width: 300px;
+    background: #111;
+    padding: 15px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  #scoreBoard, #healthBar, #ammoCount {
+    font-size: 18px;
+    text-align: center;
+    border: 1px solid #444;
+    padding: 8px;
+    border-radius: 5px;
+    user-select: none;
+  }
+  button {
+    background: #222;
+    color: #eee;
+    border: 1px solid #555;
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  button:hover {
+    background: #333;
+  }
+  #shop {
+    background: #222;
+    border: 1px solid #555;
+    border-radius: 6px;
+    padding: 15px;
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    user-select: none;
+  }
+  #shop.show {
+    display: flex;
+  }
+  #shop h2 {
+    margin: 0 0 10px 0;
+    color: #ddd;
+  }
+  .shop-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .shop-item button {
+    flex-shrink: 0;
+  }
+</style>
 </head>
 <body>
+
+<div id="gameContainer">
   <canvas id="gameCanvas" width="800" height="600"></canvas>
+  <div id="uiPanel">
+    <div id="scoreBoard">Score: 0</div>
+    <div id="healthBar">Health: 100</div>
+    <div id="ammoCount">Ammo: ∞</div>
+    <button id="toggleShopBtn">Open Shop</button>
 
-  <div id="ui">
-    <span id="score">Score: 0</span> |
-    <span id="health">Health: 100</span> |
-    <span id="ammo">Ammo: ∞</span><br /><br />
-    <button onclick="toggleShop()">Open Shop</button>
-    <button onclick="useBomb()">Use Bomb</button>
-    <button onclick="placeMine()">Place Mine</button>
+    <div id="shop">
+      <h2>Shop</h2>
+      <div class="shop-item">
+        <span>Rocket Launcher (10 points)</span>
+        <button onclick="buyItem('rocketLauncher')">Buy</button>
+      </div>
+      <div class="shop-item">
+        <span>Bomb (5 points)</span>
+        <button onclick="buyItem('bomb')">Buy</button>
+      </div>
+      <div class="shop-item">
+        <span>Mine (5 points)</span>
+        <button onclick="buyItem('mine')">Buy</button>
+      </div>
+      <div class="shop-item">
+        <span>Shield (15 points)</span>
+        <button onclick="buyItem('shield')">Buy</button>
+      </div>
+      <button id="useBombBtn">Use Bomb</button>
+      <button id="placeMineBtn">Place Mine</button>
+      <button id="closeShopBtn">Close Shop</button>
+    </div>
   </div>
+</div>
 
-  <div id="shop" class="hidden">
-    <h2>Shop</h2>
-    <button onclick="buy('rocketLauncher')">Buy Rocket Launcher (10 pts)</button>
-    <button onclick="buy('bomb')">Buy Bomb (5 pts)</button>
-    <button onclick="buy('mine')">Buy Mine (5 pts)</button>
-    <button onclick="buy('shield')">Buy Shield (15 pts)</button>
-    <button onclick="closeShop()">Close Shop</button>
-  </div>
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
 
-  <script>
-    // Stub functions so buttons don't error
-    function toggleShop() {
-      const shop = document.getElementById('shop');
-      shop.classList.toggle('hidden');
-    }
-    function closeShop() {
-      document.getElementById('shop').classList.add('hidden');
-    }
-    function buy(item) {
-      alert('Buy ' + item + ' clicked');
-    }
-    function useBomb() {
-      alert('Use bomb clicked');
-    }
-    function placeMine() {
-      alert('Place mine clicked');
-    }
-  </script>
+  // Player object
+  const player = {
+    x: canvas.width / 2,
+    y: canvas.height - 60,
+    health: 100,
+    ammo: Infinity,
+    score: 0,
+    weapon: 'gun', // gun or rocket
+    shield: false,
+    width: 30,
+    height: 30,
+    mouseX: canvas.width / 2,
+    mouseY: canvas.height / 2,
+    rocketsAvailable: 0,
+    bombs: 0,
+    mines: 0,
+  };
 
-  <!-- Link your game.js here -->
-  <!-- <script src="game.js"></script> -->
+  // Arrays for bullets, bots, mines, bombs
+  let bullets = [];
+  let bots = [];
+  let mines = [];
+  let explosions = [];
+
+  // Game constants
+  const botLimit = 10;
+
+  // UI Elements
+  const scoreBoard = document.getElementById('scoreBoard');
+  const healthBar = document.getElementById('healthBar');
+  const ammoCount = document.getElementById('ammoCount');
+  const shop = document.getElementById('shop');
+  const toggleShopBtn = document.getElementById('toggleShopBtn');
+  const closeShopBtn = document.getElementById('closeShopBtn');
+  const useBombBtn = document.getElementById('useBombBtn');
+  const placeMineBtn = document.getElementById('placeMineBtn');
+
+  // Load saved score from localStorage
+  if(localStorage.getItem('score')) {
+    player.score = parseInt(localStorage.getItem('score'));
+  }
+
+  // Event listeners
+  toggleShopBtn.addEventListener('click', () => {
+    shop.classList.toggle('show');
+  });
+  closeShopBtn.addEventListener('click', () => {
+    shop.classList.remove('show');
+  });
+
+  useBombBtn.addEventListener('click', () => {
+    useBomb();
+  });
+
+  placeMineBtn.addEventListener('click', () => {
+    placeMine();
+  });
+
+  // Track keys
+  const keys = {};
+  window.addEventListener('keydown', (e) => {
+    keys[e.key.toLowerCase()] = true;
+  });
+  window.addEventListener('keyup', (e) => {
+    keys[e.key.toLowerCase()] = false;
+  });
+
+  // Track mouse position relative to canvas
+  canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    player.mouseX = e.clientX - rect.left;
+    player.mouseY = e.clientY - rect.top;
+  });
+
+  // Rapid fire shooting
+  let shootingInterval = null;
+  canvas.addEventListener('mousedown', () => {
+    if (!shootingInterval) {
+      shoot();
+      shootingInterval = setInterval(shoot, 150); // fire rate
+    }
+  });
+  window.addEventListener('mouseup', () => {
+    clearInterval(shootingInterval);
+    shootingInterval = null;
+  });
+
+  function shoot() {
+    if (player.weapon === 'rocket') {
+      if (player.rocketsAvailable <= 0) return; // no rockets left
+      player.rocketsAvailable--;
+      player.weapon = 'gun'; // revert to gun after rocket used
+    }
+
+    // Calculate bullet direction vector
+    const angle = Math.atan2(player.mouseY - player.y, player.mouseX - player.x);
+    bullets.push({
+      x: player.x,
+      y: player.y,
+      dx: Math.cos(angle) * 8,
+      dy: Math.sin(angle) * 8,
+      type: player.weapon
+    });
+    updateUI();
+  }
+
+  // Spawn bots randomly at top
+  function spawnBot() {
+    if (bots.length >= botLimit) return;
+    const bot = {
+      x: Math.random() * (canvas.width - 30),
+      y: -30,
+      width: 30,
+      height: 30,
+      health: 100,
+      speed: 1 + Math.random() * 1,
+    };
+    bots.push(bot);
+  }
+
+  // Player and bots movement and logic
+  function updatePositions() {
+    // Player movement (WASD)
+    if (keys['w'] || keys['arrowup']) player.y -= 5;
+    if (keys['s'] || keys['arrowdown']) player.y += 5;
+    if (keys['a'] || keys['arrowleft']) player.x -= 5;
+    if (keys['d'] || keys['arrowright']) player.x += 5;
+
+    // Keep player inside canvas
+    player.x = Math.min(Math.max(player.x, player.width / 2), canvas.width - player.width / 2);
+    player.y = Math.min(Math.max(player.y, player.height / 2), canvas.height - player.height / 2);
+
+    // Bots move down slowly
+    bots.forEach(bot => {
+      bot.y += bot.speed;
+
+      // Simple AI: move towards player horizontally
+      if (bot.x < player.x) bot.x += 0.5;
+      else if (bot.x > player.x) bot.x -= 0.5;
+
+      // Bots hit player collision
+      if (rectCollision(bot, player)) {
+        if (!player.shield) {
+          player.health -= 1;
+          if (player.health <= 0) {
+            respawnPlayer();
+          }
+        }
+        // Bot disappears after hitting player
+        bots.splice(bots.indexOf(bot), 1);
+      }
+
+      // Remove bots that fall off screen bottom
+      if (bot.y > canvas.height + bot.height) {
+        bots.splice(bots.indexOf(bot), 1);
+      }
+    });
+
+    // Bullets update
+    bullets.forEach((b, i) => {
+      b.x += b.dx;
+      b.y += b.dy;
+
+      // Remove bullets off screen
+      if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
+        bullets.splice(i, 1);
+        return;
+      }
+
+      // Check collision with bots
+      bots.forEach((bot, j) => {
+        if (rectCollision(b, bot)) {
+          // Damage bot
+          bot.health -= (b.type === 'rocket') ? 100 : 25;
+          bullets.splice(i, 1);
+          if (bot.health <= 0) {
+            bots.splice(j, 1);
+            player.score++;
+            localStorage.setItem('score', player.score);
+            updateUI();
+          }
+        }
+      });
+    });
+
+    // Mines damage bots on contact
+    mines.forEach((mine, i) => {
+      bots.forEach((bot, j) => {
+        if (rectCollision(mine, bot)) {
+          bots.splice(j, 1);
+          player.score++;
+          localStorage.setItem('score', player.score);
+          updateUI();
+          mines.splice(i, 1);
+        }
+      });
+    });
+  }
+
+  function rectCollision(a, b) {
+    return a.x < b.x + b.width &&
+           a.x + (a.width || 10) > b.x &&
+           a.y < b.y + b.height &&
+           a.y + (a.height || 10) > b.y;
+  }
+
+  function respawnPlayer() {
+    player.health = 100;
+    player.x = canvas.width / 2;
+    player.y = canvas.height - 60;
+    bots = [];
+    bullets = [];
+    mines = [];
+    updateUI();
+  }
+
+  // Drawing function
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw player (green if shield, lime if no shield)
+    ctx.fillStyle = player.shield ? 'cyan' : 'lime';
+    ctx.fillRect(player.x - player.width/2, player.y - player.height/2, player.width, player.height);
+
+    // Draw bots (red squares)
+    bots.forEach(bot => {
+      ctx.fillStyle = 'red';
+      ctx.fillRect(bot.x, bot.y, bot.width, bot.height);
+    });
+
+    // Draw bullets (white or orange rockets)
+    bullets.forEach(b => {
+      ctx.fillStyle = b.type === 'rocket' ? 'orange' : 'white';
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Draw mines (yellow squares)
+    mines.forEach(mine => {
+      ctx.fillStyle = 'yellow';
+      ctx.fillRect(mine.x - 5, mine.y - 5, 10, 10);
+    });
+  }
+
+  // Main game loop
+  function gameLoop() {
+    spawnBot();
+    updatePositions();
+    draw();
+    requestAnimationFrame(gameLoop);
+  }
+
+  // Shop purchase function
+  function buyItem(item) {
+    if (item === 'rocketLauncher' && player.score >= 10 && player.rocketsAvailable === 0) {
+      player.rocketsAvailable = 1;
+      player.weapon = 'rocket';
+      player.score -= 10;
+    }
+    else if (item === 'bomb' && player.score >= 5) {
+      player.bombs++;
+      player.score -= 5;
+    }
+    else if (item === 'mine' && player.score >= 5) {
+      player.mines++;
+      player.score -= 5;
+    }
+    else if (item === 'shield' && player.score >= 15 && !player.shield) {
+      player.shield = true;
+      player.score -= 15;
+    }
+    updateUI();
+  }
+
+  function useBomb() {
+    if (player.bombs <= 0) return alert('No bombs left!');
+    player.bombs--;
+    // Explode near player, remove bots in radius
+    const radius = 100;
+    bots = bots.filter(bot => {
+      const dx = bot.x - player.x;
+      const dy = bot.y - player.y;
+      if (dx*dx + dy*dy <= radius*radius) {
+        player.score++;
+        localStorage.setItem('score', player.score);
+        return false; // remove bot
+      }
+      return true;
+    });
+    updateUI();
+  }
+
+  function placeMine() {
+    if (player.mines <= 0) return alert('No mines left!');
+    player.mines--;
+    mines.push({x: player.x, y: player.y, width: 10, height: 10});
+    updateUI();
+  }
+
+  // Update UI texts
+  function updateUI() {
+    scoreBoard.textContent = 'Score: ' + player.score;
+    healthBar.textContent = 'Health: ' + player.health;
+    ammoCount.textContent = 'Ammo: ' + (player.weapon === 'gun' ? '∞' : player.rocketsAvailable);
+  }
+
+  // Initialize
+  updateUI();
+  gameLoop();
+</script>
+
 </body>
 </html>
