@@ -1,0 +1,45 @@
+/* style.css */
+
+body, html {
+  margin: 0;
+  padding: 0;
+  background-color: black;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+#gameCanvas {
+  background-color: black;
+  display: block;
+  margin: 0 auto;
+  border: 1px solid white;
+}
+
+#ui {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  color: white;
+  z-index: 10;
+}
+
+#shop {
+  position: absolute;
+  top: 60px;
+  left: 10px;
+  background-color: rgba(0, 0, 0, 0.85);
+  border: 2px solid white;
+  padding: 10px;
+  display: none;
+  z-index: 20;
+}
+
+#shop.hidden {
+  display: none;
+}
+
+button {
+  background-color: #333;
+  color: white;
+  border: 1px solid #fff;
+  padding: 5px 10px;
