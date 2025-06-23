@@ -1,0 +1,170 @@
+// game.js
+// Core game engine (cleaned up without difficulty system, black background, fixed shop)
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+let player = {
+  x: canvas.width / 2,
+  y: canvas.height - 50,
+  health: 100,
+  ammo: Infinity,
+  score: 0,
+  weapon: 'gun',
+  shield: false
+};
+
+let bullets = [], bots = [], mines = [], bombs = [], explosions = [], cooldown = 0;
+let botLimit = 10;
+let fireInterval;
+let keys = {};
+
+if (localStorage.getItem('score')) player.score = parseInt(localStorage.getItem('score'));
+
+document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+document.addEventListener('mousedown', () => { fireInterval = setInterval(shoot, 100); });
+document.addEventListener('mouseup', () => { clearInterval(fireInterval); });
+canvas.addEventListener('mousemove', e => {
+  player.mouseX = e.offsetX;
+  player.mouseY = e.offsetY;
+});
+
+function shoot() {
+  const angle = Math.atan2(player.mouseY - player.y, player.mouseX - player.x);
+  bullets.push({ x: player.x, y: player.y, dx: Math.cos(angle) * 5, dy: Math.sin(angle) * 5, type: player.weapon });
+  updateUI();
+}
+
+function spawnBot() {
+  if (bots.length >= botLimit) return;
+  let bot = {
+    x: Math.random() * canvas.width,
+    y: 0,
+    health: 100,
+    weapon: 'none',
+    fireRate: 1000
+  };
+  bots.push(bot);
+}
+
+function gameLoop() {
+  // Fill background black
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  if (keys['w'] || keys['arrowup']) player.y -= 5;
+  if (keys['s'] || keys['arrowdown']) player.y += 5;
+  if (keys['a'] || keys['arrowleft']) player.x -= 5;
+  if (keys['d'] || keys['arrowright']) player.x += 5;
+  player.x = Math.max(15, Math.min(canvas.width - 15, player.x));
+  player.y = Math.max(15, Math.min(canvas.height - 15, player.y));
+
+  bullets.forEach((b, i) => {
+    b.x += b.dx;
+    b.y += b.dy;
+    ctx.fillStyle = b.type === 'rocket' ? 'orange' : 'white';
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+    bots.forEach((bot, j) => {
+      if (Math.abs(bot.x - b.x) < 20 && Math.abs(bot.y - b.y) < 20) {
+        bot.health -= b.type === 'rocket' ? 100 : 25;
+        if (bot.health <= 0) {
+          bots.splice(j, 1);
+          player.score++;
+          localStorage.setItem('score', player.score);
+          updateUI();
+        }
+        bullets.splice(i, 1);
+      }
+    });
+  });
+
+  bots.forEach((bot, i) => {
+    let dx = player.x - bot.x;
+    let dy = player.y - bot.y;
+    let dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > 1) {
+      bot.x += dx / dist;
+      bot.y += dy / dist;
+    }
+    ctx.fillStyle = 'red';
+    ctx.fillRect(bot.x, bot.y, 30, 30);
+
+    if (Math.abs(bot.x - player.x) < 20 && Math.abs(bot.y - player.y) < 20) {
+      player.health -= 1;
+      if (player.health <= 0) {
+        bots = [];
+        player.health = 100;
+        updateUI();
+      }
+    }
+  });
+
+  ctx.fillStyle = player.shield ? 'cyan' : 'lime';
+  ctx.fillRect(player.x - 15, player.y - 15, 30, 30);
+
+  mines.forEach(m => {
+    ctx.fillStyle = 'yellow';
+    ctx.fillRect(m.x - 5, m.y - 5, 10, 10);
+    bots.forEach((bot, j) => {
+      if (Math.abs(bot.x - m.x) < 15 && Math.abs(bot.y - m.y) < 15) {
+        bots.splice(j, 1);
+        player.score++;
+        localStorage.setItem('score', player.score);
+        updateUI();
+      }
+    });
+  });
+
+  requestAnimationFrame(gameLoop);
+}
+
+function toggleShop() {
+  document.getElementById('shop').classList.toggle('hidden');
+}
+
+function closeShop() {
+  document.getElementById('shop').classList.add('hidden');
+}
+
+function buy(item) {
+  if (item === 'rocketLauncher' && player.score >= 10) {
+    player.weapon = 'rocket';
+    player.score -= 10;
+  }
+  if (item === 'bomb' && player.score >= 5) bombs.push({});
+  if (item === 'mine' && player.score >= 5) mines.push({});
+  if (item === 'shield' && player.score >= 15) player.shield = true;
+  localStorage.setItem('score', player.score);
+  updateUI();
+}
+
+function useBomb() {
+  if (bombs.length === 0) return;
+  bombs.pop();
+  bots.forEach((bot, i) => {
+    if (Math.abs(bot.x - player.mouseX) < 100 && Math.abs(bot.y - player.mouseY) < 100) {
+      bots.splice(i, 1);
+      player.score++;
+    }
+  });
+  localStorage.setItem('score', player.score);
+  updateUI();
+}
+
+function placeMine() {
+  if (mines.length === 0) return;
+  mines.pop();
+  mines.push({ x: player.mouseX, y: player.mouseY });
+}
+
+function updateUI() {
+  document.getElementById('score').textContent = 'Score: ' + player.score;
+  document.getElementById('health').textContent = 'Health: ' + player.health;
+  document.getElementById('ammo').textContent = 'Ammo: ∞';
+}
+
+setInterval(spawnBot, 1500);
+gameLoop();
