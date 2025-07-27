@@ -1,0 +1,150 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="icon" href="../../favicon.png" type="image/png">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="copyright" content="© 2025 Quiq. All rights reserved. Unauthorized use or redistribution prohibited.">
+  <title>Quiq License Viewer</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f2f5;
+      padding: 40px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .license-title {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .license-sub {
+      font-size: 18px;
+      color: #555;
+      margin-bottom: 25px;
+    }
+
+    .type-selector {
+      margin-bottom: 25px;
+    }
+
+    select {
+      padding: 10px 14px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      width: 100%;
+    }
+
+    .license-box {
+      background-color: #fafafa;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .license-box h1, .license-box h2, .license-box h3 {
+      margin-top: 1em;
+    }
+
+    .license-box code {
+      background: #eee;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+
+    .license-box pre {
+      background: #eee;
+      padding: 10px;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="license-title">License:</div>
+    <div class="license-sub" id="license-sub">Select a license type</div>
+
+    <div class="type-selector">
+      <select id="type-select">
+        <option value="" disabled selected>Select a license type</option>
+        <option value="Blub-Glub">Blub-Blub, Glub-Glub AND Blub-Glub_Fight</option>
+      </select>
+    </div>
+
+    <div class="license-box hidden" id="license-box"></div>
+  </div>
+
+  <script>
+    const licenseTexts = {
+      "Blub-Glub": `
+# Not-Ready
+      `
+    };
+
+    function updateDisplay(type) {
+      const sub = document.getElementById('license-sub');
+      const box = document.getElementById('license-box');
+
+      if (!type) {
+        sub.textContent = "Select a license type";
+        box.classList.add("hidden");
+        return;
+      }
+
+      const displayName = document.querySelector(`#type-select option[value="${type}"]`).textContent;
+      sub.textContent = `for ${displayName}`;
+
+      const markdown = licenseTexts[type] || "*License not found.*";
+      box.innerHTML = marked.parse(markdown);
+      box.classList.remove("hidden");
+
+      const url = new URL(window.location.href);
+      url.searchParams.set("type", type);
+      history.replaceState({}, '', url);
+    }
+
+    function ensureValidType() {
+      const url = new URL(window.location.href);
+      const type = url.searchParams.get("type");
+
+      const select = document.getElementById("type-select");
+      if (type && licenseTexts[type]) {
+        select.value = type;
+        updateDisplay(type);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      ensureValidType();
+
+      document.getElementById("type-select").addEventListener("change", e => {
+        updateDisplay(e.target.value);
+      });
+    });
+  </script>
+</body>
+</html>
