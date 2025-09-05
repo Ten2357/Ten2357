@@ -1,7 +1,8 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Static News Portal</title>
+  <title>10Verse-News Portal</title>
   <link rel="stylesheet" href="https://pandao.github.io/editor.md/css/editormd.css" />
   <style>
     body { font-family: 'Segoe UI', sans-serif; background:#0d0d0d; color:#e6e6e6; margin:0; padding:0; }
@@ -26,9 +27,10 @@
 </head>
 <body>
   <header>
-    <h1>📰 Static News</h1>
+    <h1>📰 UniVerse-News</h1>
   </header>
 
+  <!-- Controls -->
   <div class="controls">
     <input type="text" id="search" placeholder="Search news...">
     <select id="dateFilter">
@@ -43,14 +45,15 @@
     </select>
   </div>
 
+  <!-- Buttons for manual news -->
   <div class="controls" id="buttons">
-    <!-- Manually add buttons -->
-    <button onclick="openNews('example')">Example News</button>
-    <button onclick="openNews('update')">Big Update</button>
+    <button onclick="openNews('example')">Example-News</button>
   </div>
 
+  <!-- News gallery/list -->
   <div id="newsList" class="news-list"></div>
 
+  <!-- Markdown viewer -->
   <div id="viewer" class="viewer">
     <button class="back" onclick="goBack()">⬅ Back</button>
     <div id="newsContent"></div>
@@ -59,8 +62,15 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
   <script src="https://pandao.github.io/editor.md/editormd.min.js"></script>
   <script>
+    const newsList = document.getElementById('newsList');
+    const newsContent = document.getElementById('newsContent');
+    const searchInput = document.getElementById('search');
+    const dateFilter = document.getElementById('dateFilter');
+    const starFilter = document.getElementById('starFilter');
+
     let newsData = [];
 
+    // Load news from JSON file
     async function openNews(id) {
       try {
         const res = await fetch(`/stuff/${id}.json`);
@@ -68,10 +78,11 @@
         const news = await res.json();
         newsData = [news];
 
+        // Show viewer, hide list
         newsList.style.display = 'none';
-        viewer.classList.add('active');
+        document.getElementById('viewer').classList.add('active');
 
-        // Render Markdown directly from JSON
+        // Render Markdown from JSON
         newsContent.innerHTML = `<div id="md-view"><textarea style='display:none;'>${news.md}</textarea></div>`;
         editormd.markdownToHTML("md-view", {
           markdown: news.md,
@@ -83,16 +94,13 @@
       }
     }
 
+    // Back button
     function goBack() {
-      viewer.classList.remove('active');
+      document.getElementById('viewer').classList.remove('active');
       newsList.style.display = 'grid';
     }
 
-    const newsList = document.getElementById('newsList');
-    const searchInput = document.getElementById('search');
-    const dateFilter = document.getElementById('dateFilter');
-    const starFilter = document.getElementById('starFilter');
-
+    // Render gallery (optional, in case you want all news)
     function renderNewsList() {
       newsList.innerHTML = '';
       if (!newsData || newsData.length === 0) return;
@@ -128,6 +136,7 @@
     dateFilter.addEventListener('change', renderNewsList);
     starFilter.addEventListener('change', renderNewsList);
 
+    // Auto-load news if URL has ?news=id
     const params = new URLSearchParams(location.search);
     if (params.has('news')) openNews(params.get('news'));
   </script>
