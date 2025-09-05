@@ -45,7 +45,7 @@
   </div>
 
   <div class="controls" id="buttons">
-    <!-- Manually add buttons for each news -->
+    <!-- Manually add buttons -->
     <button onclick="openNews('example')">Example News</button>
     <button onclick="openNews('update')">Big Update</button>
   </div>
@@ -64,20 +64,22 @@
 
     async function openNews(id) {
       try {
-        let res = await fetch(`stuff/${id}.json`);
-        let news = await res.json();
-        newsData = [news]; // only current news for filtering in viewer
+        const res = await fetch(`/stuff/${id}.json`);
+        if (!res.ok) throw new Error("News not found on server");
+        const news = await res.json();
+        newsData = [news];
 
         newsList.style.display = 'none';
         viewer.classList.add('active');
 
-        // Render Markdown from the JSON field
+        // Render Markdown directly from JSON
         newsContent.innerHTML = `<div id="md-view"><textarea style='display:none;'>${news.md}</textarea></div>`;
         editormd.markdownToHTML("md-view", {
           markdown: news.md,
-          path   : "https://pandao.github.io/editor.md/lib/"
+          path: "https://pandao.github.io/editor.md/lib/"
         });
       } catch(e) {
+        console.error(e);
         newsContent.innerHTML = `<p>❌ Could not load news: ${id}</p>`;
       }
     }
@@ -87,7 +89,6 @@
       newsList.style.display = 'grid';
     }
 
-    // Optional: filter/search in newsList if you want to render multiple news
     const newsList = document.getElementById('newsList');
     const searchInput = document.getElementById('search');
     const dateFilter = document.getElementById('dateFilter');
@@ -97,13 +98,13 @@
       newsList.innerHTML = '';
       if (!newsData || newsData.length === 0) return;
 
-      let search = searchInput.value.toLowerCase();
-      let dateMode = dateFilter.value;
-      let starMode = starFilter.value;
+      const search = searchInput.value.toLowerCase();
+      const dateMode = dateFilter.value;
+      const starMode = starFilter.value;
 
       let filtered = newsData.filter(n => {
-        let matchesSearch = !search || n.title.toLowerCase().includes(search);
-        let matchesStar = (starMode === 'all') || (starMode === 'star' && n.star) || (starMode === 'anti' && !n.star);
+        const matchesSearch = !search || n.title.toLowerCase().includes(search);
+        const matchesStar = (starMode === 'all') || (starMode === 'star' && n.star) || (starMode === 'anti' && !n.star);
         return matchesSearch && matchesStar;
       });
 
@@ -111,7 +112,7 @@
       if (dateMode === 'oldest') filtered.sort((a,b) => new Date(a.date) - new Date(b.date));
 
       filtered.forEach(n => {
-        let card = document.createElement('div');
+        const card = document.createElement('div');
         card.className = 'news-card';
         card.innerHTML = `
           <img src="${n.image}" alt="${n.title}">
@@ -128,7 +129,6 @@
     dateFilter.addEventListener('change', renderNewsList);
     starFilter.addEventListener('change', renderNewsList);
 
-    // On load: check if ?news=id in URL
     const params = new URLSearchParams(location.search);
     if (params.has('news')) openNews(params.get('news'));
   </script>
