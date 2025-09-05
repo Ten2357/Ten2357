@@ -4,7 +4,6 @@
   "date": "2025-09-01",
   "image": "https://placekitten.com/400/200",
   "star": true,
-  "md": 
-"# Example News 📰 This is use less to everyone but the Devs"
-
+  "md":
+ "# Example News 📰\n\nThis is the **Markdown content inside the JSON**.\nYou can add images, lists, code, etc.\n\n![Kitten](https://placekitten.com/500/300)"
 }
