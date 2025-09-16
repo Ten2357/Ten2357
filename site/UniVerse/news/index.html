@@ -62,16 +62,29 @@
       const res = await fetch('/news.csv');
       const text = await res.text();
       const rows = text.trim().split('\n').slice(1); // skip header
-      allNews = rows.map(row => {
-        const [name, date, star, md] = row.split(',');
-        return { 
-          id: name.trim(), 
-          title: name.trim(), 
-          date: date.trim(), 
-          star: (star.trim().toLowerCase() === 'yes'), 
-          md: md.trim() 
-        };
-      });
+
+      allNews = rows
+        .map(row => {
+          const matches = row.match(/"([^"]*)"/g);
+          if (!matches || matches.length < 4) return null;
+
+          const [name, date, star, md] = matches.map(s => s.replace(/^"|"$/g, '').trim());
+
+          let starValue;
+          if (star.toLowerCase() === "yes") starValue = true;
+          else if (star.toLowerCase() === "no") starValue = false;
+          else starValue = null; // invalid star
+
+          return {
+            id: name,
+            title: name,
+            date: date, // format: YYYY-MM-DD
+            star: starValue,
+            md
+          };
+        })
+        .filter(n => n);
+
       renderNewsList();
 
       // Handle ?news=id
@@ -92,18 +105,23 @@
 
       let filtered = allNews.filter(n => {
         const matchesSearch = !search || n.title.toLowerCase().includes(search);
-        const matchesStar = (starMode === 'all') || (starMode === 'star' && n.star) || (starMode === 'anti' && !n.star);
+
+        let matchesStar = true;
+        if (starMode === 'star') matchesStar = (n.star === true);
+        if (starMode === 'anti') matchesStar = (n.star === false);
+        // if starMode === 'all' -> always true (even if n.star === null)
+
         return matchesSearch && matchesStar;
       });
 
-      if (dateMode === 'latest') filtered.sort((a,b) => new Date(b.date.split('/').reverse().join('-')) - new Date(a.date.split('/').reverse().join('-')));
-      if (dateMode === 'oldest') filtered.sort((a,b) => new Date(a.date.split('/').reverse().join('-')) - new Date(b.date.split('/').reverse().join('-')));
+      if (dateMode === 'latest') filtered.sort((a,b) => new Date(b.date) - new Date(a.date));
+      if (dateMode === 'oldest') filtered.sort((a,b) => new Date(a.date) - new Date(b.date));
 
       filtered.forEach(n => {
         const card = document.createElement('div');
         card.className = 'news-card';
         card.innerHTML = `
-          <h3>${n.title} ${n.star ? '<span class="star">⭐</span>' : ''}</h3>
+          <h3>${n.title} ${n.star === true ? '<span class="star">⭐</span>' : ''}</h3>
           <small>${n.date}</small>
         `;
         card.onclick = () => openNews(n);
