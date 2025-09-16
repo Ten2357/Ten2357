@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Static News with Favorites</title>
+  <title>Static News with Hover Favorites</title>
   <link rel="stylesheet" href="https://pandao.github.io/editor.md/css/editormd.css" />
   <style>
     body { font-family:'Segoe UI',sans-serif; background:#0d0d0d; color:#e6e6e6; margin:0; padding:0; }
@@ -11,7 +11,7 @@
     input, select { padding:0.6rem; border-radius:8px; border:none; background:#222; color:#eee; }
     input:focus, select:focus { outline:2px solid #444; }
     .news-list { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap:1.2rem; padding:1.5rem; }
-    .news-card { background:#1a1a1a; border-radius:12px; padding:1rem; cursor:pointer; transition:transform 0.2s, box-shadow 0.2s; }
+    .news-card { background:#1a1a1a; border-radius:12px; padding:1rem; cursor:pointer; transition:transform 0.2s, box-shadow 0.2s; position:relative; }
     .news-card:hover { transform:translateY(-5px); box-shadow:0 8px 16px rgba(0,0,0,0.6); }
     .news-card h3 { margin:0; font-size:1.1rem; font-weight:600; }
     .news-card small { color:#aaa; }
@@ -20,7 +20,25 @@
     .viewer.active { display:block; }
     button.back { margin:1rem 0; padding:0.6rem 1.2rem; border:none; border-radius:6px; background:#333; color:white; cursor:pointer; }
     button.back:hover { background:#444; }
-    .fav-btn { padding:0.2rem 0.5rem; border:none; border-radius:5px; background:#333; cursor:pointer; }
+
+    /* Heart button */
+    .fav-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      font-size: 1.4rem;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      color: transparent; /* hidden by default */
+      transition: color 0.2s;
+    }
+    .news-card:hover .fav-btn {
+      color: white; /* white heart on hover */
+    }
+    .fav-btn.favorited {
+      color: gold !important; /* filled heart */
+    }
   </style>
 </head>
 <body>
@@ -54,10 +72,11 @@
   <script src="https://pandao.github.io/editor.md/lib/marked.min.js"></script>
   <script src="https://pandao.github.io/editor.md/lib/prettify.min.js"></script>
   <script src="https://pandao.github.io/editor.md/editormd.min.js"></script>
+
   <script>
     let allNews = [];
 
-    // Cookie helpers
+    // Cookies helpers
     function getFavoriteNews(){
       const fav = document.cookie.split('; ').find(row => row.startsWith('favoriteNews='));
       if(!fav) return [];
@@ -70,9 +89,8 @@
     // Load CSV
     async function loadCSV(){
       try{
-        const res = await fetch('news.csv');
+        const res = await fetch('news.csv'); // relative path
         if(!res.ok) throw new Error("Cannot fetch CSV. Check file placement.");
-
         const text = await res.text();
         const rows = text.trim().split('\n').slice(1);
 
@@ -95,7 +113,6 @@
           const found = allNews.find(n=>n.id===newsId);
           if(found) openNews(found);
         }
-
       }catch(err){
         console.error(err);
         document.getElementById('newsList').innerHTML = `<p style="color:red;">Error loading CSV. Check _redirects and file placement.</p>`;
@@ -110,7 +127,7 @@
       const newsList = document.getElementById('newsList');
       newsList.innerHTML = '';
 
-      let favorites = getFavoriteNews();
+      const favorites = getFavoriteNews();
 
       let filtered = allNews.filter(n=>{
         const matchesSearch = !search || n.title.toLowerCase().includes(search);
@@ -134,20 +151,24 @@
         card.innerHTML=`
           <h3>${n.title} ${n.star===true?'<span class="star">⭐</span>':''}</h3>
           <small>${n.date}</small>
-          <div style="margin-top:0.5rem;">
-            <button class="fav-btn" style="color:${isFav?'gold':'#eee'};">💖</button>
-          </div>
+          <button class="fav-btn ${isFav?'favorited':''}">❤️</button>
         `;
-        card.querySelector('.fav-btn').onclick = e=>{
+
+        const favBtn = card.querySelector('.fav-btn');
+        favBtn.onclick = e=>{
           e.stopPropagation();
           let favIds = getFavoriteNews();
-          if(favIds.includes(n.id)) favIds = favIds.filter(id=>id!==n.id);
-          else favIds.push(n.id);
+          if(favIds.includes(n.id)){
+            favIds = favIds.filter(id=>id!==n.id);
+            favBtn.classList.remove('favorited');
+          } else {
+            favIds.push(n.id);
+            favBtn.classList.add('favorited');
+          }
           setFavoriteNews(favIds);
-          renderNewsList();
         };
 
-        card.onclick=()=>openNews(n);
+        card.onclick = () => openNews(n);
         newsList.appendChild(card);
       });
     }
