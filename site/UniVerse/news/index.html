@@ -2,15 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Static News</title>
+  <title>Static News with Favorites</title>
   <link rel="stylesheet" href="https://pandao.github.io/editor.md/css/editormd.css" />
   <style>
-    body { font-family: 'Segoe UI', sans-serif; background:#0d0d0d; color:#e6e6e6; margin:0; padding:0; }
+    body { font-family:'Segoe UI',sans-serif; background:#0d0d0d; color:#e6e6e6; margin:0; padding:0; }
     header { background:#1a1a1a; padding:1rem; text-align:center; }
     .controls { display:flex; flex-wrap:wrap; gap:1rem; justify-content:center; padding:1rem; background:#111; }
     input, select { padding:0.6rem; border-radius:8px; border:none; background:#222; color:#eee; }
     input:focus, select:focus { outline:2px solid #444; }
-    .news-list { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1.2rem; padding:1.5rem; }
+    .news-list { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap:1.2rem; padding:1.5rem; }
     .news-card { background:#1a1a1a; border-radius:12px; padding:1rem; cursor:pointer; transition:transform 0.2s, box-shadow 0.2s; }
     .news-card:hover { transform:translateY(-5px); box-shadow:0 8px 16px rgba(0,0,0,0.6); }
     .news-card h3 { margin:0; font-size:1.1rem; font-weight:600; }
@@ -20,6 +20,7 @@
     .viewer.active { display:block; }
     button.back { margin:1rem 0; padding:0.6rem 1.2rem; border:none; border-radius:6px; background:#333; color:white; cursor:pointer; }
     button.back:hover { background:#444; }
+    .fav-btn { padding:0.2rem 0.5rem; border:none; border-radius:5px; background:#333; cursor:pointer; }
   </style>
 </head>
 <body>
@@ -38,6 +39,7 @@
       <option value="all">All</option>
       <option value="star">⭐ Starred Only</option>
       <option value="anti">🚫 Anti-Star</option>
+      <option value="favorite">💖 Favorites Only</option>
     </select>
   </div>
 
@@ -55,69 +57,104 @@
   <script>
     let allNews = [];
 
-    async function loadCSV() {
-      try {
-        const res = await fetch('news.csv'); // relative path
-        if (!res.ok) throw new Error("Cannot fetch CSV. Check file placement.");
+    // Cookie helpers
+    function getFavoriteNews(){
+      const fav = document.cookie.split('; ').find(row => row.startsWith('favoriteNews='));
+      if(!fav) return [];
+      try { return JSON.parse(decodeURIComponent(fav.split('=')[1])); } catch { return []; }
+    }
+    function setFavoriteNews(ids){
+      document.cookie = `favoriteNews=${encodeURIComponent(JSON.stringify(ids))}; path=/; max-age=${60*60*24*365}`;
+    }
+
+    // Load CSV
+    async function loadCSV(){
+      try{
+        const res = await fetch('news.csv');
+        if(!res.ok) throw new Error("Cannot fetch CSV. Check file placement.");
 
         const text = await res.text();
         const rows = text.trim().split('\n').slice(1);
 
-        allNews = rows.map(row => {
+        allNews = rows.map(row=>{
           const matches = row.match(/"([^"]*)"/g);
-          if (!matches || matches.length < 4) return null;
-          const [name, date, star, md] = matches.map(s => s.replace(/^"|"$/g,'').trim());
-
+          if(!matches || matches.length < 4) return null;
+          const [name,date,star,md] = matches.map(s=>s.replace(/^"|"$/g,'').trim());
           let starValue = null;
-          if (star.toLowerCase() === "yes") starValue = true;
-          else if (star.toLowerCase() === "no") starValue = false;
-
+          if(star.toLowerCase()==='yes') starValue=true;
+          else if(star.toLowerCase()==='no') starValue=false;
           return { id:name, title:name, date, star:starValue, md };
-        }).filter(n => n);
+        }).filter(n=>n);
 
         renderNewsList();
 
+        // Handle ?news=id
         const params = new URLSearchParams(window.location.search);
         const newsId = params.get("news");
-        if (newsId) {
+        if(newsId){
           const found = allNews.find(n=>n.id===newsId);
           if(found) openNews(found);
         }
-      } catch(err) {
+
+      }catch(err){
         console.error(err);
         document.getElementById('newsList').innerHTML = `<p style="color:red;">Error loading CSV. Check _redirects and file placement.</p>`;
       }
     }
 
-    function renderNewsList() {
+    // Render news list
+    function renderNewsList(){
       const search = document.getElementById('search').value.toLowerCase();
       const dateMode = document.getElementById('dateFilter').value;
       const starMode = document.getElementById('starFilter').value;
       const newsList = document.getElementById('newsList');
       newsList.innerHTML = '';
 
-      let filtered = allNews.filter(n => {
+      let favorites = getFavoriteNews();
+
+      let filtered = allNews.filter(n=>{
         const matchesSearch = !search || n.title.toLowerCase().includes(search);
         let matchesStar = true;
+
         if(starMode==='star') matchesStar = n.star===true;
         if(starMode==='anti') matchesStar = n.star===false;
+        if(starMode==='favorite') matchesStar = favorites.includes(n.id);
+
         return matchesSearch && matchesStar;
       });
 
-      if(dateMode==='latest') filtered.sort((a,b)=> new Date(b.date) - new Date(a.date));
-      if(dateMode==='oldest') filtered.sort((a,b)=> new Date(a.date) - new Date(b.date));
+      if(dateMode==='latest') filtered.sort((a,b)=> new Date(b.date)-new Date(a.date));
+      if(dateMode==='oldest') filtered.sort((a,b)=> new Date(a.date)-new Date(b.date));
 
       filtered.forEach(n=>{
+        const isFav = favorites.includes(n.id);
+
         const card = document.createElement('div');
         card.className='news-card';
-        card.innerHTML=`<h3>${n.title} ${n.star===true?'<span class="star">⭐</span>':''}</h3><small>${n.date}</small>`;
+        card.innerHTML=`
+          <h3>${n.title} ${n.star===true?'<span class="star">⭐</span>':''}</h3>
+          <small>${n.date}</small>
+          <div style="margin-top:0.5rem;">
+            <button class="fav-btn" style="color:${isFav?'gold':'#eee'};">💖</button>
+          </div>
+        `;
+        card.querySelector('.fav-btn').onclick = e=>{
+          e.stopPropagation();
+          let favIds = getFavoriteNews();
+          if(favIds.includes(n.id)) favIds = favIds.filter(id=>id!==n.id);
+          else favIds.push(n.id);
+          setFavoriteNews(favIds);
+          renderNewsList();
+        };
+
         card.onclick=()=>openNews(n);
         newsList.appendChild(card);
       });
     }
 
-    async function openNews(news) {
-      try {
+    // Open Markdown viewer
+    async function openNews(news){
+      try{
         const res = await fetch(news.md);
         if(!res.ok) throw new Error(`Cannot fetch Markdown: ${news.md}`);
         const mdText = await res.text();
@@ -134,17 +171,17 @@
           markdown: mdText,
           path: "https://pandao.github.io/editor.md/lib/"
         });
-      } catch(err) {
+
+      }catch(err){
         console.error(err);
         document.getElementById('newsContent').innerHTML=`<p style="color:red;">Error loading news: ${news.id}</p>`;
       }
     }
 
-    function goBack() {
+    function goBack(){
       const url = new URL(window.location);
       url.searchParams.delete("news");
       window.history.pushState({}, "", url);
-
       document.getElementById('viewer').classList.remove('active');
       document.getElementById('newsList').style.display='grid';
     }
