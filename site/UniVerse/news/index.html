@@ -33,11 +33,11 @@
       color: transparent; /* hidden by default */
       transition: color 0.2s;
     }
-    .news-card:hover .fav-btn {
-      color: white; /* white heart on hover */
+    .news-card:hover .fav-btn:not(.favorited) {
+      color: white; /* show white heart on hover if not favorited */
     }
     .fav-btn.favorited {
-      color: gold !important; /* filled heart */
+      color: gold !important; /* filled heart if favorited */
     }
   </style>
 </head>
@@ -89,7 +89,7 @@
     // Load CSV
     async function loadCSV(){
       try{
-        const res = await fetch('news.csv'); // relative path
+        const res = await fetch('news.csv');
         if(!res.ok) throw new Error("Cannot fetch CSV. Check file placement.");
         const text = await res.text();
         const rows = text.trim().split('\n').slice(1);
@@ -151,7 +151,7 @@
         card.innerHTML=`
           <h3>${n.title} ${n.star===true?'<span class="star">⭐</span>':''}</h3>
           <small>${n.date}</small>
-          <button class="fav-btn ${isFav?'favorited':''}">❤️</button>
+          <button class="fav-btn ${isFav?'favorited':''}">${isFav?'❤️':'🤍'}</button>
         `;
 
         const favBtn = card.querySelector('.fav-btn');
@@ -161,9 +161,11 @@
           if(favIds.includes(n.id)){
             favIds = favIds.filter(id=>id!==n.id);
             favBtn.classList.remove('favorited');
+            favBtn.textContent = '🤍';
           } else {
             favIds.push(n.id);
             favBtn.classList.add('favorited');
+            favBtn.textContent = '❤️';
           }
           setFavoriteNews(favIds);
         };
