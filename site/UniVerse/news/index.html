@@ -2,35 +2,32 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>10Verse-News Portal</title>
+  <title>Static News</title>
   <link rel="stylesheet" href="https://pandao.github.io/editor.md/css/editormd.css" />
   <style>
     body { font-family: 'Segoe UI', sans-serif; background:#0d0d0d; color:#e6e6e6; margin:0; padding:0; }
-    header { background:#1a1a1a; padding:1rem; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.5); }
-    header h1 { margin:0; font-weight:600; }
-    .controls { display:flex; flex-wrap:wrap; gap:1rem; justify-content:center; padding:1rem; background:#111; position:sticky; top:0; z-index:10; }
+    header { background:#1a1a1a; padding:1rem; text-align:center; }
+    .controls { display:flex; flex-wrap:wrap; gap:1rem; justify-content:center; padding:1rem; background:#111; }
     input, select { padding:0.6rem; border-radius:8px; border:none; background:#222; color:#eee; }
     input:focus, select:focus { outline:2px solid #444; }
     .news-list { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1.2rem; padding:1.5rem; }
-    .news-card { background:#1a1a1a; border-radius:12px; overflow:hidden; cursor:pointer; transition:transform 0.2s, box-shadow 0.2s; box-shadow:0 4px 8px rgba(0,0,0,0.4); }
+    .news-card { background:#1a1a1a; border-radius:12px; padding:1rem; cursor:pointer; transition:transform 0.2s, box-shadow 0.2s; }
     .news-card:hover { transform:translateY(-5px); box-shadow:0 8px 16px rgba(0,0,0,0.6); }
-    .news-card img { width:100%; height:180px; object-fit:cover; }
-    .news-card .content { padding:0.8rem; }
     .news-card h3 { margin:0; font-size:1.1rem; font-weight:600; }
     .news-card small { color:#aaa; }
     .star { color: gold; font-size:1.2rem; margin-left:6px; }
     .viewer { display:none; padding:2rem; max-width:900px; margin:auto; }
     .viewer.active { display:block; }
-    button.back { margin:1rem 0; padding:0.6rem 1.2rem; border:none; border-radius:6px; background:#333; color:white; cursor:pointer; transition:background 0.2s; }
+    button.back { margin:1rem 0; padding:0.6rem 1.2rem; border:none; border-radius:6px; background:#333; color:white; cursor:pointer; }
     button.back:hover { background:#444; }
   </style>
 </head>
 <body>
   <header>
-    <h1>📰 UniVerse-News</h1>
+    <h1>📰 Static News</h1>
   </header>
 
-  <!-- Controls -->
+  <!-- Filters -->
   <div class="controls">
     <input type="text" id="search" placeholder="Search news...">
     <select id="dateFilter">
@@ -45,11 +42,6 @@
     </select>
   </div>
 
-  <!-- Buttons for manual news -->
-  <div class="controls" id="buttons">
-    <button onclick="openNews('example')">Example-News</button>
-  </div>
-
   <!-- News gallery/list -->
   <div id="newsList" class="news-list"></div>
 
@@ -60,85 +52,100 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+  <script src="https://pandao.github.io/editor.md/lib/marked.min.js"></script>
+  <script src="https://pandao.github.io/editor.md/lib/prettify.min.js"></script>
   <script src="https://pandao.github.io/editor.md/editormd.min.js"></script>
   <script>
-    const newsList = document.getElementById('newsList');
-    const newsContent = document.getElementById('newsContent');
-    const searchInput = document.getElementById('search');
-    const dateFilter = document.getElementById('dateFilter');
-    const starFilter = document.getElementById('starFilter');
+    let allNews = [];
 
-    let newsData = [];
+    async function loadCSV() {
+      const res = await fetch('/news.csv');
+      const text = await res.text();
+      const rows = text.trim().split('\n').slice(1); // skip header
+      allNews = rows.map(row => {
+        const [name, date, star, md] = row.split(',');
+        return { 
+          id: name.trim(), 
+          title: name.trim(), 
+          date: date.trim(), 
+          star: (star.trim().toLowerCase() === 'yes'), 
+          md: md.trim() 
+        };
+      });
+      renderNewsList();
 
-    // Load news from JSON file
-    async function openNews(id) {
-      try {
-        const res = await fetch(`/stuff/${id}.json`);
-        if (!res.ok) throw new Error("News not found on server");
-        const news = await res.json();
-        newsData = [news];
-
-        // Show viewer, hide list
-        newsList.style.display = 'none';
-        document.getElementById('viewer').classList.add('active');
-
-        // Render Markdown from JSON
-        newsContent.innerHTML = `<div id="md-view"><textarea style='display:none;'>${news.md}</textarea></div>`;
-        editormd.markdownToHTML("md-view", {
-          markdown: news.md,
-          path: "https://pandao.github.io/editor.md/lib/"
-        });
-      } catch(e) {
-        console.error(e);
-        newsContent.innerHTML = `<p>❌ Could not load news: ${id}</p>`;
+      // Handle ?news=id
+      const params = new URLSearchParams(window.location.search);
+      const newsId = params.get("news");
+      if (newsId) {
+        const found = allNews.find(n => n.id === newsId);
+        if (found) openNews(found);
       }
     }
 
-    // Back button
-    function goBack() {
-      document.getElementById('viewer').classList.remove('active');
-      newsList.style.display = 'grid';
-    }
-
-    // Render gallery (optional, in case you want all news)
     function renderNewsList() {
+      const search = document.getElementById('search').value.toLowerCase();
+      const dateMode = document.getElementById('dateFilter').value;
+      const starMode = document.getElementById('starFilter').value;
+      const newsList = document.getElementById('newsList');
       newsList.innerHTML = '';
-      if (!newsData || newsData.length === 0) return;
 
-      const search = searchInput.value.toLowerCase();
-      const dateMode = dateFilter.value;
-      const starMode = starFilter.value;
-
-      let filtered = newsData.filter(n => {
+      let filtered = allNews.filter(n => {
         const matchesSearch = !search || n.title.toLowerCase().includes(search);
         const matchesStar = (starMode === 'all') || (starMode === 'star' && n.star) || (starMode === 'anti' && !n.star);
         return matchesSearch && matchesStar;
       });
 
-      if (dateMode === 'latest') filtered.sort((a,b) => new Date(b.date) - new Date(a.date));
-      if (dateMode === 'oldest') filtered.sort((a,b) => new Date(a.date) - new Date(b.date));
+      if (dateMode === 'latest') filtered.sort((a,b) => new Date(b.date.split('/').reverse().join('-')) - new Date(a.date.split('/').reverse().join('-')));
+      if (dateMode === 'oldest') filtered.sort((a,b) => new Date(a.date.split('/').reverse().join('-')) - new Date(b.date.split('/').reverse().join('-')));
 
       filtered.forEach(n => {
         const card = document.createElement('div');
         card.className = 'news-card';
         card.innerHTML = `
-          <img src="${n.image}" alt="${n.title}">
-          <div class="content">
-            <h3>${n.title} ${n.star ? '<span class="star">⭐</span>' : ''}</h3>
-            <small>${n.date}</small>
-          </div>`;
-        card.onclick = () => openNews(n.id);
+          <h3>${n.title} ${n.star ? '<span class="star">⭐</span>' : ''}</h3>
+          <small>${n.date}</small>
+        `;
+        card.onclick = () => openNews(n);
         newsList.appendChild(card);
       });
     }
 
-    searchInput.addEventListener('input', renderNewsList);
-    dateFilter.addEventListener('change', renderNewsList);
-    starFilter.addEventListener('change', renderNewsList);
+    async function openNews(news) {
+      const res = await fetch(`/${news.md}`);
+      const mdText = await res.text();
 
-    // Auto-load news if URL has ?news=id
-    const params = new URLSearchParams(location.search);
-    if (params.has('news')) openNews(params.get('news'));
+      // Update URL (without reloading)
+      const url = new URL(window.location);
+      url.searchParams.set("news", news.id);
+      window.history.pushState({}, "", url);
+
+      document.getElementById('newsList').style.display = 'none';
+      document.getElementById('viewer').classList.add('active');
+
+      document.getElementById('newsContent').innerHTML = `<div id="md-view"><textarea style='display:none;'>${mdText}</textarea></div>`;
+      editormd.markdownToHTML("md-view", {
+        markdown: mdText,
+        path: "https://pandao.github.io/editor.md/lib/"
+      });
+    }
+
+    function goBack() {
+      // Remove ?news from URL
+      const url = new URL(window.location);
+      url.searchParams.delete("news");
+      window.history.pushState({}, "", url);
+
+      document.getElementById('viewer').classList.remove('active');
+      document.getElementById('newsList').style.display = 'grid';
+    }
+
+    document.getElementById('search').addEventListener('input', renderNewsList);
+    document.getElementById('dateFilter').addEventListener('change', renderNewsList);
+    document.getElementById('starFilter').addEventListener('change', renderNewsList);
+
+    // Start
+    loadCSV();
   </script>
 </body>
 </html>
