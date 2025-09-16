@@ -59,7 +59,7 @@
     let allNews = [];
 
     async function loadCSV() {
-      const res = await fetch('/news.csv');
+      const res = await fetch('news.csv');
       console.log("Fetching CSV...");
 console.log("Response status:", res.status);
 console.log("Response text preview:", (await res.clone().text()).slice(0,200));
