@@ -7,3 +7,6 @@ This is the first example news item.
 - Supports images
 
 ![Kitten](https://placekitten.com/400/300)
+
+Md file made with:
+[pandao.github.io](https://pandao.github.io/editor.md/en.html)
