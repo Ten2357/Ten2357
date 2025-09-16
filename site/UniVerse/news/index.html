@@ -60,6 +60,10 @@
 
     async function loadCSV() {
       const res = await fetch('/news.csv');
+      console.log("Fetching CSV...");
+console.log("Response status:", res.status);
+console.log("Response text preview:", (await res.clone().text()).slice(0,200));
+
       const text = await res.text();
       const rows = text.trim().split('\n').slice(1); // skip header
 
