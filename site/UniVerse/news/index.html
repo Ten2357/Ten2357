@@ -27,7 +27,6 @@
     <h1>📰 Static News</h1>
   </header>
 
-  <!-- Filters -->
   <div class="controls">
     <input type="text" id="search" placeholder="Search news...">
     <select id="dateFilter">
@@ -42,10 +41,8 @@
     </select>
   </div>
 
-  <!-- News gallery/list -->
   <div id="newsList" class="news-list"></div>
 
-  <!-- Markdown viewer -->
   <div id="viewer" class="viewer">
     <button class="back" onclick="goBack()">⬅ Back</button>
     <div id="newsContent"></div>
@@ -59,44 +56,36 @@
     let allNews = [];
 
     async function loadCSV() {
-      const res = await fetch('news.csv');
-      console.log("Fetching CSV...");
-console.log("Response status:", res.status);
-console.log("Response text preview:", (await res.clone().text()).slice(0,200));
+      try {
+        const res = await fetch('news.csv'); // relative path
+        if (!res.ok) throw new Error("Cannot fetch CSV. Check file placement.");
 
-      const text = await res.text();
-      const rows = text.trim().split('\n').slice(1); // skip header
+        const text = await res.text();
+        const rows = text.trim().split('\n').slice(1);
 
-      allNews = rows
-        .map(row => {
+        allNews = rows.map(row => {
           const matches = row.match(/"([^"]*)"/g);
           if (!matches || matches.length < 4) return null;
+          const [name, date, star, md] = matches.map(s => s.replace(/^"|"$/g,'').trim());
 
-          const [name, date, star, md] = matches.map(s => s.replace(/^"|"$/g, '').trim());
-
-          let starValue;
+          let starValue = null;
           if (star.toLowerCase() === "yes") starValue = true;
           else if (star.toLowerCase() === "no") starValue = false;
-          else starValue = null; // invalid star
 
-          return {
-            id: name,
-            title: name,
-            date: date, // format: YYYY-MM-DD
-            star: starValue,
-            md
-          };
-        })
-        .filter(n => n);
+          return { id:name, title:name, date, star:starValue, md };
+        }).filter(n => n);
 
-      renderNewsList();
+        renderNewsList();
 
-      // Handle ?news=id
-      const params = new URLSearchParams(window.location.search);
-      const newsId = params.get("news");
-      if (newsId) {
-        const found = allNews.find(n => n.id === newsId);
-        if (found) openNews(found);
+        const params = new URLSearchParams(window.location.search);
+        const newsId = params.get("news");
+        if (newsId) {
+          const found = allNews.find(n=>n.id===newsId);
+          if(found) openNews(found);
+        }
+      } catch(err) {
+        console.error(err);
+        document.getElementById('newsList').innerHTML = `<p style="color:red;">Error loading CSV. Check _redirects and file placement.</p>`;
       }
     }
 
@@ -109,64 +98,61 @@ console.log("Response text preview:", (await res.clone().text()).slice(0,200));
 
       let filtered = allNews.filter(n => {
         const matchesSearch = !search || n.title.toLowerCase().includes(search);
-
         let matchesStar = true;
-        if (starMode === 'star') matchesStar = (n.star === true);
-        if (starMode === 'anti') matchesStar = (n.star === false);
-        // if starMode === 'all' -> always true (even if n.star === null)
-
+        if(starMode==='star') matchesStar = n.star===true;
+        if(starMode==='anti') matchesStar = n.star===false;
         return matchesSearch && matchesStar;
       });
 
-      if (dateMode === 'latest') filtered.sort((a,b) => new Date(b.date) - new Date(a.date));
-      if (dateMode === 'oldest') filtered.sort((a,b) => new Date(a.date) - new Date(b.date));
+      if(dateMode==='latest') filtered.sort((a,b)=> new Date(b.date) - new Date(a.date));
+      if(dateMode==='oldest') filtered.sort((a,b)=> new Date(a.date) - new Date(b.date));
 
-      filtered.forEach(n => {
+      filtered.forEach(n=>{
         const card = document.createElement('div');
-        card.className = 'news-card';
-        card.innerHTML = `
-          <h3>${n.title} ${n.star === true ? '<span class="star">⭐</span>' : ''}</h3>
-          <small>${n.date}</small>
-        `;
-        card.onclick = () => openNews(n);
+        card.className='news-card';
+        card.innerHTML=`<h3>${n.title} ${n.star===true?'<span class="star">⭐</span>':''}</h3><small>${n.date}</small>`;
+        card.onclick=()=>openNews(n);
         newsList.appendChild(card);
       });
     }
 
     async function openNews(news) {
-      const res = await fetch(`/${news.md}`);
-      const mdText = await res.text();
+      try {
+        const res = await fetch(news.md);
+        if(!res.ok) throw new Error(`Cannot fetch Markdown: ${news.md}`);
+        const mdText = await res.text();
 
-      // Update URL (without reloading)
-      const url = new URL(window.location);
-      url.searchParams.set("news", news.id);
-      window.history.pushState({}, "", url);
+        const url = new URL(window.location);
+        url.searchParams.set("news", news.id);
+        window.history.pushState({}, "", url);
 
-      document.getElementById('newsList').style.display = 'none';
-      document.getElementById('viewer').classList.add('active');
+        document.getElementById('newsList').style.display='none';
+        document.getElementById('viewer').classList.add('active');
 
-      document.getElementById('newsContent').innerHTML = `<div id="md-view"><textarea style='display:none;'>${mdText}</textarea></div>`;
-      editormd.markdownToHTML("md-view", {
-        markdown: mdText,
-        path: "https://pandao.github.io/editor.md/lib/"
-      });
+        document.getElementById('newsContent').innerHTML=`<div id="md-view"><textarea style='display:none;'>${mdText}</textarea></div>`;
+        editormd.markdownToHTML("md-view", {
+          markdown: mdText,
+          path: "https://pandao.github.io/editor.md/lib/"
+        });
+      } catch(err) {
+        console.error(err);
+        document.getElementById('newsContent').innerHTML=`<p style="color:red;">Error loading news: ${news.id}</p>`;
+      }
     }
 
     function goBack() {
-      // Remove ?news from URL
       const url = new URL(window.location);
       url.searchParams.delete("news");
       window.history.pushState({}, "", url);
 
       document.getElementById('viewer').classList.remove('active');
-      document.getElementById('newsList').style.display = 'grid';
+      document.getElementById('newsList').style.display='grid';
     }
 
     document.getElementById('search').addEventListener('input', renderNewsList);
     document.getElementById('dateFilter').addEventListener('change', renderNewsList);
     document.getElementById('starFilter').addEventListener('change', renderNewsList);
 
-    // Start
     loadCSV();
   </script>
 </body>
