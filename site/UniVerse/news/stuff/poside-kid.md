@@ -1,7 +1,7 @@
 # Poside-Kid: Starsi
 ## Starsi Drank tea with Poside in it.
 
-Someone had put **[Poside](https://ten-2357.netlify.app/universe/item/poside "Poside")** in his tea powder but no one knows how. But experts say it happend while most of the people in town were asleep in the night, but thankfully starsi survived cause It was around only one drop.
+Someone had put **[Poside](https://ten-2357.netlify.app/universe/item/poside "Poside")** in his tea powder but no one knows how. But experts say it happend while most of the people in town were asleep in the night, but thankfully starsi survived cause It was only around one drop.
 
 ---
 
