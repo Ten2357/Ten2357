@@ -1,14 +1,14 @@
 [build]
   publish = "site"
 
-# Catch-all redirect for SPA routes
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
-# Explicit 404 rule (Netlify will use this when nothing matches)
+# First try to serve 404.html if nothing exists
 [[redirects]]
   from = "/*"
   to = "/404.html"
   status = 404
+
+# (Optional) Only add this if you need SPA-style fallback
+# [[redirects]]
+#   from = "/*"
+#   to = "/index.html"
+#   status = 200
