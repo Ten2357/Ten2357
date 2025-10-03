@@ -3,28 +3,119 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Page Not Found</title>
+  <title>404 - Page Not Found</title>
   <style>
+    /* Import a nice font */
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
     body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background-color: #f8f8f8;
       margin: 0;
-      padding: 50px;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at center, #2a003f, #000);
+      color: #ddd;
+      font-family: 'Orbitron', sans-serif;
+      text-align: center;
     }
+
+    .container {
+      max-width: 600px;
+      padding: 20px;
+    }
+
     h1 {
-      font-size: 5em;
-      color: #ff4a4a;
+      font-size: 10rem;
+      margin: 0;
+      color: #a64dff;
+      text-shadow: 0 0 20px #b366ff, 0 0 40px #8000ff;
+      animation: glow 2s infinite alternate;
     }
+
+    @keyframes glow {
+      from {
+        text-shadow: 0 0 10px #8000ff, 0 0 20px #a64dff, 0 0 40px #5e00cc;
+      }
+      to {
+        text-shadow: 0 0 20px #b366ff, 0 0 40px #8000ff, 0 0 60px #d9b3ff;
+      }
+    }
+
+    p {
+      font-size: 1.3rem;
+      color: #aaa;
+      margin-bottom: 30px;
+    }
+
     a {
+      display: inline-block;
+      padding: 15px 40px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #fff;
+      background: linear-gradient(135deg, #8000ff, #a64dff);
+      border: none;
+      border-radius: 50px;
       text-decoration: none;
-      color: #0073e6;
+      box-shadow: 0 0 15px rgba(166, 77, 255, 0.6);
+      transition: all 0.3s ease;
+    }
+
+    a:hover {
+      background: linear-gradient(135deg, #a64dff, #d9b3ff);
+      color: #000;
+      box-shadow: 0 0 25px rgba(166, 77, 255, 0.9);
+      transform: scale(1.05);
+    }
+
+    .glitch {
+      position: relative;
+      display: inline-block;
+    }
+
+    .glitch::before,
+    .glitch::after {
+      content: attr(data-text);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      color: #fff;
+      background: transparent;
+      overflow: hidden;
+      clip: rect(0, 900px, 0, 0);
+    }
+
+    .glitch::before {
+      left: 2px;
+      text-shadow: -2px 0 #ff00ff;
+      animation: glitch 2s infinite linear alternate-reverse;
+    }
+
+    .glitch::after {
+      left: -2px;
+      text-shadow: -2px 0 #00ffff;
+      animation: glitch 2s infinite linear alternate;
+    }
+
+    @keyframes glitch {
+      0% { clip: rect(0, 9999px, 0, 0); }
+      5% { clip: rect(10px, 9999px, 50px, 0); }
+      10% { clip: rect(85px, 9999px, 140px, 0); }
+      15% { clip: rect(30px, 9999px, 90px, 0); }
+      20% { clip: rect(60px, 9999px, 120px, 0); }
+      25% { clip: rect(0, 9999px, 100px, 0); }
+      30% { clip: rect(20px, 9999px, 80px, 0); }
+      100% { clip: rect(0, 9999px, 0, 0); }
     }
   </style>
 </head>
 <body>
-  <h1>404</h1>
-  <p>Oops! The page you’re looking for doesn’t exist.</p>
-  <p><a href="/">Go back home</a></p>
+  <div class="container">
+    <h1 class="glitch" data-text="404">404</h1>
+    <p>Oops! The page you’re looking for doesn’t exist.</p>
+    <a href="/">⬅ Back to Home</a>
+  </div>
 </body>
 </html>
