@@ -1,187 +1,207 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Pac-Man Custom</title>
-  <style>
-    body { background: black; margin:0; overflow:hidden; }
-    canvas { display:block; margin:0 auto; background:#111; }
-    #ui {
-      color: white; font-family: Arial; font-size: 20px;
-      position:absolute; top:10px; left:10px;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Custom Pac-Man</title>
+<style>
+  body { margin:0; background:black; font-family:sans-serif; color:white;}
+  #ui { position:absolute; top:10px; left:10px; font-size:24px;}
+  canvas { display:block; margin:0 auto; background:#111;}
+</style>
 </head>
 <body>
-  <div id="ui">❤️❤️❤️</div>
-  <canvas id="game" width="600" height="600"></canvas>
-  <script>
-    const canvas = document.getElementById("game");
-    const ctx = canvas.getContext("2d");
-    const ui = document.getElementById("ui");
+<div id="ui">❤️❤️❤️</div>
+<canvas id="game" width="600" height="600"></canvas>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const ui = document.getElementById('ui');
 
-    const tileSize = 20;
-    const rows = canvas.height / tileSize;
-    const cols = canvas.width / tileSize;
+const tileSize = 20;
+const rows = canvas.height / tileSize;
+const cols = canvas.width / tileSize;
 
-    let pacman = { x: 10, y: 10, dx: 0, dy: 0, speed: 1 };
-    let hearts = 3;
-    let pellets = [];
-    let ghosts = [];
-    let powerOrb = null;
-    let abilityOrb = null;
-    let ability = null;
-    let teleportReady = false;
-    let ghostEatable = false;
-    let ghostTimer = 0;
+// Create walls map (1 = wall, 0 = empty)
+let map = Array.from({length:rows},()=>Array(cols).fill(0));
+// Add some outer walls
+for(let r=0;r<rows;r++){map[r][0]=1;map[r][cols-1]=1;}
+for(let c=0;c<cols;c++){map[0][c]=1;map[rows-1][c]=1;}
+// Random inner walls
+for(let i=0;i<100;i++){
+  let r=Math.floor(Math.random()*(rows-2))+1;
+  let c=Math.floor(Math.random()*(cols-2))+1;
+  map[r][c]=1;
+}
 
-    // Generate pellets
-    for (let r=0; r<rows; r++) {
-      for (let c=0; c<cols; c++) {
-        if (Math.random()<0.1) pellets.push({x:c,y:r,type:"gold"}); 
-        else if (Math.random()<0.2) pellets.push({x:c,y:r,type:"normal"});
-      }
+let pacman={x:1,y:1,dx:0,dy:0,speed:1};
+let hearts=3;
+let pellets=[];
+let ghosts=[];
+let powerOrb=null;
+let abilityOrb=null;
+let ghostEatable=false;
+let ghostTimer=0;
+let ability=null;
+let teleportReady=false;
+
+// Place pellets in empty spaces
+for(let r=1;r<rows-1;r++){
+  for(let c=1;c<cols-1;c++){
+    if(map[r][c]===0){
+      if(Math.random()<0.1) pellets.push({x:c,y:r,type:"gold"});
+      else pellets.push({x:c,y:r,type:"normal"});
     }
+  }
+}
 
-    // Spawn ghosts
-    for (let i=0; i<4; i++) {
-      ghosts.push({x:Math.floor(Math.random()*cols),
-                   y:Math.floor(Math.random()*rows)});
+// Spawn ghosts away from player
+function spawnGhosts(n){
+  for(let i=0;i<n;i++){
+    let gx,gy;
+    do{
+      gx=Math.floor(Math.random()*cols);
+      gy=Math.floor(Math.random()*rows);
+    } while(map[gy][gx]===1 || (Math.abs(gx-pacman.x)<5 && Math.abs(gy-pacman.y)<5));
+    ghosts.push({x:gx,y:gy});
+  }
+}
+spawnGhosts(4);
+
+// Controls
+window.addEventListener("keydown", e=>{
+  if(e.key==="ArrowUp"){pacman.dx=0; pacman.dy=-1;}
+  if(e.key==="ArrowDown"){pacman.dx=0; pacman.dy=1;}
+  if(e.key==="ArrowLeft"){pacman.dx=-1; pacman.dy=0;}
+  if(e.key==="ArrowRight"){pacman.dx=1; pacman.dy=0;}
+  if(e.key===" " && teleportReady){
+    // teleport to a random empty spot
+    let tx,ty;
+    do{
+      tx=Math.floor(Math.random()*cols);
+      ty=Math.floor(Math.random()*rows);
+    } while(map[ty][tx]===1);
+    pacman.x=tx; pacman.y=ty;
+    teleportReady=false;
+  }
+});
+
+function update(){
+  // Move Pac-Man
+  let nx=pacman.x+pacman.dx;
+  let ny=pacman.y+pacman.dy;
+  if(map[ny] && map[ny][nx]===0){ pacman.x=nx; pacman.y=ny; }
+
+  // Eat pellets
+  for(let i=pellets.length-1;i>=0;i--){
+    let p=pellets[i];
+    if(p.x===pacman.x && p.y===pacman.y){
+      if(p.type==="gold"){hearts=Math.min(3,hearts+0.5);}
+      pellets.splice(i,1);
     }
+  }
 
-    // Controls
-    window.addEventListener("keydown", e=>{
-      if (e.key==="ArrowUp") {pacman.dx=0; pacman.dy=-1;}
-      if (e.key==="ArrowDown") {pacman.dx=0; pacman.dy=1;}
-      if (e.key==="ArrowLeft") {pacman.dx=-1; pacman.dy=0;}
-      if (e.key==="ArrowRight") {pacman.dx=1; pacman.dy=0;}
-      if (e.key===" " && teleportReady) {
-        pacman.x = Math.floor(Math.random()*cols);
-        pacman.y = Math.floor(Math.random()*rows);
-        teleportReady = false;
-      }
-    });
+  // Power orb
+  if(powerOrb && pacman.x===powerOrb.x && pacman.y===powerOrb.y){
+    ghostEatable=true; ghostTimer=500; powerOrb=null;
+  }
 
-    function update() {
-      pacman.x += pacman.dx * pacman.speed;
-      pacman.y += pacman.dy * pacman.speed;
-      if (pacman.x<0) pacman.x=0;
-      if (pacman.y<0) pacman.y=0;
-      if (pacman.x>=cols) pacman.x=cols-1;
-      if (pacman.y>=rows) pacman.y=rows-1;
+  // Ability orb
+  if(abilityOrb && pacman.x===abilityOrb.x && pacman.y===abilityOrb.y){
+    if(abilityOrb.type==="speed"){ pacman.speed=2; setTimeout(()=>pacman.speed=1,5000);}
+    if(abilityOrb.type==="magnet"){ ability="magnet"; setTimeout(()=>ability=null,5000);}
+    if(abilityOrb.type==="teleport"){ teleportReady=true; }
+    abilityOrb=null;
+  }
 
-      // Eat pellets
-      for (let i=pellets.length-1; i>=0; i--) {
-        let p = pellets[i];
-        if (p.x===pacman.x && p.y===pacman.y) {
-          if (p.type==="gold") hearts = Math.min(3, hearts+0.5);
-          pellets.splice(i,1);
-        }
-      }
+  // Ghost movement
+  for(let g of ghosts){
+    let dx=Math.sign(pacman.x-g.x);
+    let dy=Math.sign(pacman.y-g.y);
+    if(ghostEatable){dx*=-1; dy*=-1;}
+    // simple move if next tile is empty
+    if(map[g.y][g.x+dx]===0) g.x+=dx;
+    else if(map[g.y+dy][g.x]===0) g.y+=dy;
 
-      // Eat power orb
-      if (powerOrb && pacman.x===powerOrb.x && pacman.y===powerOrb.y) {
-        ghostEatable = true;
-        ghostTimer = 500;
-        powerOrb = null;
-      }
-
-      // Ability orbs
-      if (abilityOrb && pacman.x===abilityOrb.x && pacman.y===abilityOrb.y) {
-        if (abilityOrb.type==="speed") { pacman.speed=2; setTimeout(()=>pacman.speed=1,5000);}
-        if (abilityOrb.type==="magnet") { ability="magnet"; setTimeout(()=>ability=null,5000);}
-        if (abilityOrb.type==="teleport") teleportReady = true;
-        abilityOrb = null;
-      }
-
-      // Ghosts move
-      for (let g of ghosts) {
-        let dx = Math.sign(pacman.x-g.x);
-        let dy = Math.sign(pacman.y-g.y);
-        if (ghostEatable) { dx*=-1; dy*=-1; }
-        if (Math.random()<0.5) g.x += dx; else g.y += dy;
-
-        if (g.x===pacman.x && g.y===pacman.y) {
-          if (ghostEatable) {
-            hearts = Math.min(3, hearts+1);
-            g.x=Math.floor(Math.random()*cols);
-            g.y=Math.floor(Math.random()*rows);
-          } else {
-            hearts -= 1;
-            pacman.x=10; pacman.y=10;
-            if (hearts<=0) alert("Game Over!");
-          }
-        }
-      }
-
-      if (ghostTimer>0) {
-        ghostTimer--;
-        if (ghostTimer<=0) ghostEatable=false;
-      }
-
-      // Rare spawn ability orb
-      if (!abilityOrb && Math.random()<0.002) {
-        let types=["speed","magnet","teleport"];
-        abilityOrb={x:Math.floor(Math.random()*cols),
-                    y:Math.floor(Math.random()*rows),
-                    type:types[Math.floor(Math.random()*types.length)]};
-      }
-
-      // Occasionally spawn power orb
-      if (!powerOrb && Math.random()<0.001) {
-        powerOrb={x:Math.floor(Math.random()*cols),y:Math.floor(Math.random()*rows)};
-      }
-
-      draw();
-      requestAnimationFrame(update);
+    if(g.x===pacman.x && g.y===pacman.y){
+      if(ghostEatable){hearts=Math.min(3,hearts+1); g.x=0; g.y=0;}
+      else{hearts-=1; pacman.x=1; pacman.y=1; if(hearts<=0){alert("Game Over"); hearts=3; pacman.x=1; pacman.y=1;}} 
     }
+  }
 
-    function draw() {
-      ctx.fillStyle="black";
-      ctx.fillRect(0,0,canvas.width,canvas.height);
+  if(ghostTimer>0){ghostTimer--; if(ghostTimer<=0) ghostEatable=false;}
 
-      // Pellets
-      for (let p of pellets) {
-        ctx.fillStyle = p.type==="gold" ? "gold":"white";
-        ctx.fillRect(p.x*tileSize+6,p.y*tileSize+6,8,8);
-      }
+  // Rare ability orb spawn
+  if(!abilityOrb && Math.random()<0.002){
+    let types=["speed","magnet","teleport"];
+    let ax,ay;
+    do{ax=Math.floor(Math.random()*cols); ay=Math.floor(Math.random()*rows);} while(map[ay][ax]===1);
+    abilityOrb={x:ax,y:ay,type:types[Math.floor(Math.random()*types.length)]};
+  }
 
-      // Power orb
-      if (powerOrb) {
-        ctx.fillStyle="blue";
-        ctx.beginPath();
-        ctx.arc(powerOrb.x*tileSize+10,powerOrb.y*tileSize+10,8,0,Math.PI*2);
-        ctx.fill();
-      }
+  // Rare power orb spawn
+  if(!powerOrb && Math.random()<0.001){
+    let px,py;
+    do{px=Math.floor(Math.random()*cols); py=Math.floor(Math.random()*rows);} while(map[py][px]===1);
+    powerOrb={x:px,y:py};
+  }
 
-      // Ability orb
-      if (abilityOrb) {
-        ctx.fillStyle=abilityOrb.type==="speed"?"lime":
-                      abilityOrb.type==="magnet"?"magenta":"cyan";
-        ctx.beginPath();
-        ctx.arc(abilityOrb.x*tileSize+10,abilityOrb.y*tileSize+10,6,0,Math.PI*2);
-        ctx.fill();
-      }
+  draw();
+  requestAnimationFrame(update);
+}
 
-      // Ghosts
-      for (let g of ghosts) {
-        ctx.fillStyle=ghostEatable?"lightblue":"red";
-        ctx.fillRect(g.x*tileSize+2,g.y*tileSize+2,16,16);
-      }
+function draw(){
+  ctx.fillStyle="black";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
 
-      // Pac-Man
-      ctx.fillStyle="yellow";
-      ctx.beginPath();
-      ctx.arc(pacman.x*tileSize+10,pacman.y*tileSize+10,10,0,Math.PI*2);
-      ctx.fill();
-
-      // UI
-      let heartsUI = "❤️".repeat(Math.floor(hearts));
-      if (hearts%1!==0) heartsUI+="💔";
-      ui.textContent = heartsUI;
+  // Draw map
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      if(map[r][c]===1){ctx.fillStyle="blue"; ctx.fillRect(c*tileSize,r*tileSize,tileSize,tileSize);}
     }
+  }
 
-    update();
-  </script>
+  // Draw pellets
+  for(let p of pellets){
+    ctx.fillStyle=p.type==="gold"?"gold":"white";
+    ctx.fillRect(p.x*tileSize+6,p.y*tileSize+6,8,8);
+  }
+
+  // Draw power orb
+  if(powerOrb){
+    ctx.fillStyle="blue";
+    ctx.beginPath();
+    ctx.arc(powerOrb.x*tileSize+10,powerOrb.y*tileSize+10,8,0,Math.PI*2);
+    ctx.fill();
+  }
+
+  // Ability orb
+  if(abilityOrb){
+    ctx.fillStyle=abilityOrb.type==="speed"?"lime":
+                  abilityOrb.type==="magnet"?"magenta":"cyan";
+    ctx.beginPath();
+    ctx.arc(abilityOrb.x*tileSize+10,abilityOrb.y*tileSize+10,6,0,Math.PI*2);
+    ctx.fill();
+  }
+
+  // Draw ghosts
+  for(let g of ghosts){
+    ctx.fillStyle=ghostEatable?"lightblue":"red";
+    ctx.fillRect(g.x*tileSize+2,g.y*tileSize+2,16,16);
+  }
+
+  // Draw Pac-Man
+  ctx.fillStyle="yellow";
+  ctx.beginPath();
+  ctx.arc(pacman.x*tileSize+10,pacman.y*tileSize+10,10,0,Math.PI*2);
+  ctx.fill();
+
+  // UI hearts
+  let heartsUI="❤️".repeat(Math.floor(hearts));
+  if(hearts%1!==0) heartsUI+="💔";
+  ui.textContent=heartsUI;
+}
+
+update();
+</script>
 </body>
 </html>
